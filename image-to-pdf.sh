@@ -81,7 +81,7 @@ process_dir() {
         notify "No images found in: ${short}"
     fi
 
-    # Clean up buffer directory
+    # Remove processed folder
     rm -rf "$work"
 }
 
