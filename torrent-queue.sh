@@ -22,7 +22,7 @@ trap cleanup EXIT INT TERM
 # ── Ensure transmission-daemon is running ─────────────────────────────────
 ensure_daemon() {
     if ! pgrep -x transmission-da > /dev/null; then
-        transmission-daemon --download-dir "$DOWNLOAD_DIR"
+        transmission-daemon
         local retries=10
         while (( retries-- > 0 )); do
             sleep 1
