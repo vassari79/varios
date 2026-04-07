@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-TORRENT_TEMP="${HOME}/temp/torrents"
+TORRENT_TEMP="${HOME}/temp/h.temp/torrents"
 QUEUE_DAEMON="${HOME}/bin/torrent-queue.sh"
 
 mkdir -p "$TORRENT_TEMP"

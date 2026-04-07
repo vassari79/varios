@@ -5,7 +5,7 @@
 #
 # Requires: transmission-cli (transmission-remote, transmission-daemon)
 
-TORRENT_TEMP="${HOME}/temp/torrents"
+TORRENT_TEMP="${HOME}/temp/h.temp/torrents"
 DOWNLOAD_DIR="${HOME}/temp/h.temp"
 PID_FILE="/tmp/torrent-queue.pid"
 ADDED_LOG="/tmp/torrent-queue-added.txt"  # tracks files already submitted

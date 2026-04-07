@@ -13,6 +13,32 @@ MAX_JOBS=6
 mkdir -p "$BUF_DIR"
 
 notify() { command -v notify-send &>/dev/null && notify-send "image-to-pdf" "$1" || echo "$1" >&2; }
+export -f notify
+
+# Transliterate CJK (Chinese/Japanese/Korean) characters to ASCII.
+# Uses python-unidecode if installed, otherwise strips CJK chars.
+sanitize_name() {
+    python3 -c "
+import sys, re
+name = sys.argv[1]
+def has_cjk(s):
+    for c in s:
+        cp = ord(c)
+        if (0x3040 <= cp <= 0x9FFF or 0xF900 <= cp <= 0xFAFF or 0x20000 <= cp <= 0x2A6DF):
+            return True
+    return False
+if has_cjk(name):
+    try:
+        from unidecode import unidecode
+        name = unidecode(name)
+    except ImportError:
+        name = ''.join(c if ord(c) < 0x2E80 else '_' for c in name)
+name = re.sub(r'[^\w\s.\-]', '_', name)
+name = re.sub(r'[\s_]+', '_', name).strip('_')
+print(name if name else 'unnamed')
+" "$1"
+}
+export -f sanitize_name
 
 short_name() {
     local name="$1"
@@ -29,6 +55,7 @@ process_dir() {
     local src="$1"
     local name
     name=$(basename "$src")
+    name=$(sanitize_name "$name")
     local short
     short=$(short_name "$name")
     local work="${BUF_DIR}/${short}"
@@ -40,7 +67,7 @@ process_dir() {
     find "$work" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) -print0 \
         | xargs -0 -P "${MAX_JOBS}" -I{} bash -c '
             f="{}"
-            convert -density 300 "$f" "${f%.*}.pdf" && rm -f "$f"
+            magick -density 300 "$f" "${f%.*}.pdf" && rm -f "$f"
         '
 
     # Merge all PDFs into one file named after the short name
