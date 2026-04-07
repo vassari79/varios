@@ -6,14 +6,13 @@
 # Requires: transmission-cli (transmission-remote, transmission-daemon)
 
 TORRENT_TEMP="${HOME}/temp/h.temp/torrents"
+DONE_DIR="${HOME}/temp/h.temp/torrents/done"
 DOWNLOAD_DIR="${HOME}/temp/h.temp"
 PID_FILE="/tmp/torrent-queue.pid"
-ADDED_LOG="/tmp/torrent-queue-added.txt"  # tracks files already submitted
 IDLE_TIMEOUT=7200   # seconds (2h) with no new torrents before exit
 
-mkdir -p "$TORRENT_TEMP" "$DOWNLOAD_DIR"
+mkdir -p "$TORRENT_TEMP" "$DONE_DIR" "$DOWNLOAD_DIR"
 echo $$ > "$PID_FILE"
-touch "$ADDED_LOG"
 
 notify() { command -v notify-send &>/dev/null && notify-send "torrent-queue" "$1" || echo "torrent-queue: $1" >&2; }
 
@@ -32,23 +31,16 @@ ensure_daemon() {
     fi
 }
 
-# ── Add a single torrent file (idempotent via ADDED_LOG) ──────────────────
+# ── Add a single torrent file, move to done/ on success ──────────────────
 add_torrent() {
     local torrent_file="$1"
-    local basename
-    basename=$(basename "$torrent_file")
-
-    # Skip if already submitted this session
-    if grep -qxF "$basename" "$ADDED_LOG" 2>/dev/null; then
-        return
-    fi
 
     ensure_daemon
     if transmission-remote --add "$torrent_file" --download-dir "$DOWNLOAD_DIR" &>/dev/null; then
-        echo "$basename" >> "$ADDED_LOG"
-        notify "Added: $basename"
+        mv "$torrent_file" "$DONE_DIR/"
+        notify "Added: $(basename "$torrent_file")"
     else
-        notify "Failed to add: $basename"
+        notify "Failed to add: $(basename "$torrent_file")"
     fi
 }
 
