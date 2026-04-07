@@ -36,6 +36,7 @@ add_torrent() {
     local torrent_file="$1"
 
     ensure_daemon
+    mkdir -p "$DONE_DIR"
     if transmission-remote --add "$torrent_file" --download-dir "$DOWNLOAD_DIR" &>/dev/null; then
         mv "$torrent_file" "$DONE_DIR/"
         notify "Added: $(basename "$torrent_file")"

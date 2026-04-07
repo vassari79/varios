@@ -40,7 +40,10 @@ fi
 TORRENT_URL="${PAGE_URL%/}/download"
 # Timestamp marker: only pick up torrents that appear AFTER this point
 MARKER=$(mktemp /tmp/torrent-dl-marker.XXXXXX)
+trap 'rm -f "$MARKER"' EXIT
 firefox-nightly "$TORRENT_URL" &
+# Close the download tab after 2s (download is already triggered by then)
+( sleep 2; wlrctl window focus app_id:firefox-nightly; sleep 0.2; YDOTOOL_SOCKET=/run/user/1000/.ydotool_socket ydotool key -d 30 29:1 17:1 17:0 29:0 ) &
 
 # ── 3. Poll ~/Downloads for new .torrent (race-safe via timestamp) ────────
 DEADLINE=$(( $(date +%s) + 30 ))
