@@ -75,7 +75,7 @@ process_dir() {
     shopt -s nullglob
     local pdfs=("$work"/*.pdf)
     if [[ ${#pdfs[@]} -gt 0 ]]; then
-        pdftk "${pdfs[@]}" cat output "$out"
+        (cd "$SRC_DIR" && pdftk "${pdfs[@]}" cat output "$out")
         notify "Done: ${short}.pdf"
     else
         notify "No images found in: ${short}"
@@ -89,5 +89,5 @@ export -f process_dir
 export MAX_JOBS SRC_DIR BUF_DIR
 
 # Find all subdirs (excluding the .processing buffer itself), process up to MAX_JOBS at a time
-find "$SRC_DIR" -mindepth 1 -maxdepth 1 -type d -not -name '.processing' -print0 \
+find "$SRC_DIR" -mindepth 1 -maxdepth 1 -type d -not -name '.processing' -not -name 'torrents' -print0 \
     | xargs -0 -P "$MAX_JOBS" -I{} bash -c 'process_dir "$@"' _ {}
