@@ -1,0 +1,350 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 640">
+<defs>
+  <pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse" x="30" y="18">
+    <circle cx="8" cy="8" r="1.3" fill="#C0BAAE" opacity="0.7"/>
+  </pattern>
+</defs>
+
+<!-- Board -->
+<rect x="30" y="18" width="730" height="608" rx="8" fill="#F0EBE0"/>
+<rect x="30" y="18" width="730" height="608" rx="8" fill="url(#dots)"/>
+<rect x="30" y="18" width="730" height="608" rx="8" fill="none" stroke="#8A8478" stroke-width="1.5"/>
+<text font-family="sans-serif" font-size="9" x="395" y="635" text-anchor="middle" fill="#888780">Tester final + Buzzer de continuidade — 3 LEDs + 2 botões — PC817C</text>
+
+<!-- Mounting holes -->
+<circle cx="44" cy="32" r="4" fill="#C0BAAE" stroke="#8A8478" stroke-width="0.8"/>
+<circle cx="750" cy="32" r="4" fill="#C0BAAE" stroke="#8A8478" stroke-width="0.8"/>
+<circle cx="44" cy="616" r="4" fill="#C0BAAE" stroke="#8A8478" stroke-width="0.8"/>
+<circle cx="750" cy="616" r="4" fill="#C0BAAE" stroke="#8A8478" stroke-width="0.8"/>
+
+<!-- PLUG LABELS -->
+<text font-family="sans-serif" font-size="10" font-weight="bold" x="27" y="94" text-anchor="end" fill="#D85A30">PINO 1</text>
+<text font-family="sans-serif" font-size="10" font-weight="bold" x="27" y="206" text-anchor="end" fill="#378ADD">PINO 2</text>
+<text font-family="sans-serif" font-size="10" font-weight="bold" x="27" y="405" text-anchor="end" fill="#3B6D11">TERRA</text>
+
+<!-- Pino 1 bus -->
+<line x1="28" y1="91" x2="58" y2="91" stroke="#D85A30" stroke-width="2.5"/>
+<line x1="58" y1="50" x2="58" y2="580" stroke="#D85A30" stroke-width="2" stroke-dasharray="3 2"/>
+<circle cx="58" cy="91" r="3" fill="#D85A30"/>
+<circle cx="58" cy="196" r="3" fill="#D85A30"/>
+<circle cx="58" cy="310" r="3" fill="#D85A30"/>
+<circle cx="58" cy="510" r="3" fill="#D85A30"/>
+
+<!-- Pino 2 bus -->
+<line x1="28" y1="203" x2="48" y2="203" stroke="#378ADD" stroke-width="2.5"/>
+<line x1="48" y1="50" x2="48" y2="580" stroke="#378ADD" stroke-width="2" stroke-dasharray="3 2"/>
+<circle cx="48" cy="126" r="3" fill="#378ADD"/>
+<circle cx="48" cy="231" r="3" fill="#378ADD"/>
+<circle cx="48" cy="390" r="3" fill="#378ADD"/>
+<circle cx="48" cy="545" r="3" fill="#378ADD"/>
+
+<!-- Terra bus -->
+<line x1="28" y1="402" x2="38" y2="402" stroke="#3B6D11" stroke-width="2.5"/>
+<line x1="38" y1="50" x2="38" y2="580" stroke="#3B6D11" stroke-width="2" stroke-dasharray="3 2"/>
+<circle cx="38" cy="340" r="3" fill="#3B6D11"/>
+<circle cx="38" cy="390" r="3" fill="#3B6D11"/>
+<circle cx="38" cy="570" r="3" fill="#3B6D11"/>
+
+<!-- ===================== CANAL A ===================== -->
+<text font-family="sans-serif" font-size="9" font-weight="bold" x="44" y="68" fill="#5F5E5A">Canal A — Pino1 ↔ Pino2 — 4×10kΩ — 🟢 verde</text>
+
+<line x1="58" y1="91" x2="70" y2="91" stroke="#D85A30" stroke-width="2"/>
+<rect x="70" y="83" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="84" y="92" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="98" y1="91" x2="104" y2="91" stroke="#D85A30" stroke-width="2"/>
+<rect x="104" y="83" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="118" y="92" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="132" y1="91" x2="138" y2="91" stroke="#D85A30" stroke-width="2"/>
+<rect x="138" y="83" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="152" y="92" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="166" y1="91" x2="172" y2="91" stroke="#D85A30" stroke-width="2"/>
+<rect x="172" y="83" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="186" y="92" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="200" y1="91" x2="214" y2="91" stroke="#D85A30" stroke-width="2"/>
+<g transform="translate(214,91)"><polygon points="0,-7 0,7 16,0" fill="#FAC775" stroke="#BA7517" stroke-width="0.9"/><line x1="16" y1="-8" x2="16" y2="8" stroke="#BA7517" stroke-width="1.6"/></g>
+<text font-family="sans-serif" font-size="7" x="222" y="108" text-anchor="middle" fill="#BA7517">4007</text>
+<polygon points="244,97 254,97 249,110" fill="#FAC775" stroke="#BA7517" stroke-width="0.6" opacity="0.6"/>
+<line x1="244" y1="110" x2="254" y2="110" stroke="#BA7517" stroke-width="0.9" opacity="0.6"/>
+<line x1="249" y1="91" x2="249" y2="97" stroke="#BA7517" stroke-width="0.6" stroke-dasharray="2 1" opacity="0.5"/>
+<line x1="249" y1="110" x2="249" y2="126" stroke="#BA7517" stroke-width="0.6" stroke-dasharray="2 1" opacity="0.5"/>
+<line x1="230" y1="91" x2="268" y2="91" stroke="#D85A30" stroke-width="2"/>
+<line x1="48" y1="126" x2="60" y2="126" stroke="#378ADD" stroke-width="2"/>
+<line x1="60" y1="126" x2="268" y2="126" stroke="#378ADD" stroke-width="2"/>
+<rect x="268" y="78" width="52" height="58" rx="5" fill="#D8D0C0" stroke="#5F5E5A" stroke-width="1"/>
+<line x1="294" y1="78" x2="294" y2="136" stroke="#A09888" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" font-weight="bold" x="294" y="88" text-anchor="middle" fill="#2C2C2A">PC817</text>
+<text font-family="sans-serif" font-size="7" x="281" y="107" text-anchor="middle" fill="#5F5E5A">LED</text>
+<text font-family="sans-serif" font-size="7" x="307" y="107" text-anchor="middle" fill="#5F5E5A">TR</text>
+<text font-family="sans-serif" font-size="6" x="264" y="94" text-anchor="end" fill="#888780">1+</text>
+<text font-family="sans-serif" font-size="6" x="264" y="129" text-anchor="end" fill="#888780">2-</text>
+<text font-family="sans-serif" font-size="6" x="323" y="94" fill="#888780">4C</text>
+<text font-family="sans-serif" font-size="6" x="323" y="129" fill="#888780">3E</text>
+<circle cx="268" cy="91" r="2.5" fill="#D85A30"/>
+<circle cx="268" cy="126" r="2.5" fill="#378ADD"/>
+<circle cx="320" cy="91" r="2.5" fill="#BA7517"/>
+<circle cx="320" cy="126" r="2.5" fill="#5F5E5A"/>
+<line x1="320" y1="91" x2="332" y2="91" stroke="#BA7517" stroke-width="2"/>
+<rect x="332" y="83" width="30" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="347" y="92" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">100Ω</text>
+<line x1="362" y1="91" x2="372" y2="91" stroke="#BA7517" stroke-width="2"/>
+<circle cx="382" cy="91" r="11" fill="#97C459" stroke="#3B6D11" stroke-width="1.5"/>
+<text font-family="sans-serif" font-size="7" font-weight="bold" x="382" y="91" text-anchor="middle" dominant-baseline="central" fill="#173404">VERDE</text>
+<line x1="393" y1="91" x2="420" y2="91" stroke="#BA7517" stroke-width="1.5"/>
+<circle cx="420" cy="91" r="3" fill="#BA7517"/>
+<line x1="320" y1="126" x2="445" y2="126" stroke="#5F5E5A" stroke-width="1.5"/>
+<circle cx="445" cy="126" r="3" fill="#5F5E5A"/>
+
+<!-- SEPARATOR A/B -->
+<line x1="36" y1="152" x2="740" y2="152" stroke="#D3D1C7" stroke-width="0.8" stroke-dasharray="4 3"/>
+
+<!-- ===================== CANAL B ===================== -->
+<text font-family="sans-serif" font-size="9" font-weight="bold" x="44" y="170" fill="#5F5E5A">Canal B — Pino1 ↔ Pino2 — 2×47kΩ — 🔴 vermelho</text>
+
+<line x1="58" y1="196" x2="86" y2="196" stroke="#D85A30" stroke-width="2"/>
+<rect x="86" y="188" width="38" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="105" y="197" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">47k</text>
+<line x1="124" y1="196" x2="136" y2="196" stroke="#D85A30" stroke-width="2"/>
+<rect x="136" y="188" width="38" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="155" y="197" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">47k</text>
+<line x1="174" y1="196" x2="214" y2="196" stroke="#D85A30" stroke-width="2"/>
+<g transform="translate(214,196)"><polygon points="0,-7 0,7 16,0" fill="#FAC775" stroke="#BA7517" stroke-width="0.9"/><line x1="16" y1="-8" x2="16" y2="8" stroke="#BA7517" stroke-width="1.6"/></g>
+<text font-family="sans-serif" font-size="7" x="222" y="213" text-anchor="middle" fill="#BA7517">4007</text>
+<polygon points="244,202 254,202 249,215" fill="#FAC775" stroke="#BA7517" stroke-width="0.6" opacity="0.6"/>
+<line x1="244" y1="215" x2="254" y2="215" stroke="#BA7517" stroke-width="0.9" opacity="0.6"/>
+<line x1="249" y1="196" x2="249" y2="202" stroke="#BA7517" stroke-width="0.6" stroke-dasharray="2 1" opacity="0.5"/>
+<line x1="249" y1="215" x2="249" y2="231" stroke="#BA7517" stroke-width="0.6" stroke-dasharray="2 1" opacity="0.5"/>
+<line x1="230" y1="196" x2="268" y2="196" stroke="#D85A30" stroke-width="2"/>
+<line x1="48" y1="231" x2="60" y2="231" stroke="#378ADD" stroke-width="2"/>
+<line x1="60" y1="231" x2="268" y2="231" stroke="#378ADD" stroke-width="2"/>
+<rect x="268" y="183" width="52" height="58" rx="5" fill="#D8D0C0" stroke="#5F5E5A" stroke-width="1"/>
+<line x1="294" y1="183" x2="294" y2="241" stroke="#A09888" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" font-weight="bold" x="294" y="193" text-anchor="middle" fill="#2C2C2A">PC817</text>
+<text font-family="sans-serif" font-size="7" x="281" y="212" text-anchor="middle" fill="#5F5E5A">LED</text>
+<text font-family="sans-serif" font-size="7" x="307" y="212" text-anchor="middle" fill="#5F5E5A">TR</text>
+<text font-family="sans-serif" font-size="6" x="264" y="199" text-anchor="end" fill="#888780">1+</text>
+<text font-family="sans-serif" font-size="6" x="264" y="234" text-anchor="end" fill="#888780">2-</text>
+<text font-family="sans-serif" font-size="6" x="323" y="199" fill="#888780">4C</text>
+<text font-family="sans-serif" font-size="6" x="323" y="234" fill="#888780">3E</text>
+<circle cx="268" cy="196" r="2.5" fill="#D85A30"/>
+<circle cx="268" cy="231" r="2.5" fill="#378ADD"/>
+<circle cx="320" cy="196" r="2.5" fill="#BA7517"/>
+<circle cx="320" cy="231" r="2.5" fill="#5F5E5A"/>
+<line x1="320" y1="196" x2="332" y2="196" stroke="#BA7517" stroke-width="2"/>
+<rect x="332" y="188" width="30" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="347" y="197" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">100Ω</text>
+<line x1="362" y1="196" x2="372" y2="196" stroke="#BA7517" stroke-width="2"/>
+<circle cx="382" cy="196" r="11" fill="#F09595" stroke="#A32D2D" stroke-width="1.5"/>
+<text font-family="sans-serif" font-size="7" font-weight="bold" x="382" y="196" text-anchor="middle" dominant-baseline="central" fill="#501313">VERM.</text>
+<line x1="393" y1="196" x2="420" y2="196" stroke="#BA7517" stroke-width="1.5"/>
+<circle cx="420" cy="196" r="3" fill="#BA7517"/>
+<line x1="320" y1="231" x2="445" y2="231" stroke="#5F5E5A" stroke-width="1.5"/>
+<circle cx="445" cy="231" r="3" fill="#5F5E5A"/>
+
+<!-- SEPARATOR B/C -->
+<line x1="36" y1="258" x2="740" y2="258" stroke="#D3D1C7" stroke-width="0.8" stroke-dasharray="4 3"/>
+
+<!-- ===================== CANAL C ===================== -->
+<text font-family="sans-serif" font-size="9" font-weight="bold" x="44" y="276" fill="#5F5E5A">Canal C — Pino1+Pino2 → TERRA — caminho duplo — 🟡 amarelo</text>
+
+<!-- Path 1 -->
+<text font-family="sans-serif" font-size="7" x="62" y="298" fill="#D85A30">Pino 1 →</text>
+<line x1="58" y1="310" x2="70" y2="310" stroke="#D85A30" stroke-width="2"/>
+<rect x="70" y="302" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="84" y="311" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="98" y1="310" x2="104" y2="310" stroke="#D85A30" stroke-width="2"/>
+<rect x="104" y="302" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="118" y="311" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="132" y1="310" x2="138" y2="310" stroke="#D85A30" stroke-width="2"/>
+<rect x="138" y="302" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="152" y="311" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="166" y1="310" x2="172" y2="310" stroke="#D85A30" stroke-width="2"/>
+<rect x="172" y="302" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="186" y="311" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="200" y1="310" x2="214" y2="310" stroke="#D85A30" stroke-width="2"/>
+<g transform="translate(214,310)"><polygon points="0,-7 0,7 16,0" fill="#FAC775" stroke="#BA7517" stroke-width="0.9"/><line x1="16" y1="-8" x2="16" y2="8" stroke="#BA7517" stroke-width="1.6"/></g>
+<line x1="230" y1="310" x2="255" y2="310" stroke="#D85A30" stroke-width="2"/>
+<circle cx="255" cy="310" r="3" fill="#8A7A60"/>
+
+<!-- Path 2 -->
+<text font-family="sans-serif" font-size="7" x="62" y="378" fill="#378ADD">Pino 2 →</text>
+<line x1="48" y1="390" x2="70" y2="390" stroke="#378ADD" stroke-width="2"/>
+<rect x="70" y="382" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="84" y="391" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="98" y1="390" x2="104" y2="390" stroke="#378ADD" stroke-width="2"/>
+<rect x="104" y="382" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="118" y="391" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="132" y1="390" x2="138" y2="390" stroke="#378ADD" stroke-width="2"/>
+<rect x="138" y="382" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="152" y="391" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="166" y1="390" x2="172" y2="390" stroke="#378ADD" stroke-width="2"/>
+<rect x="172" y="382" width="28" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="186" y="391" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">10k</text>
+<line x1="200" y1="390" x2="214" y2="390" stroke="#378ADD" stroke-width="2"/>
+<g transform="translate(214,390)"><polygon points="0,-7 0,7 16,0" fill="#FAC775" stroke="#BA7517" stroke-width="0.9"/><line x1="16" y1="-8" x2="16" y2="8" stroke="#BA7517" stroke-width="1.6"/></g>
+<line x1="230" y1="390" x2="255" y2="390" stroke="#378ADD" stroke-width="2"/>
+<circle cx="255" cy="390" r="3" fill="#8A7A60"/>
+
+<!-- Join paths -->
+<line x1="255" y1="310" x2="255" y2="390" stroke="#8A7A60" stroke-width="1.5" stroke-dasharray="3 2"/>
+<line x1="255" y1="350" x2="268" y2="350" stroke="#8A7A60" stroke-width="2"/>
+<circle cx="255" cy="350" r="3" fill="#8A7A60"/>
+
+<!-- Terra return C -->
+<line x1="38" y1="340" x2="268" y2="340" stroke="#3B6D11" stroke-width="2"/>
+
+<!-- PC817 C -->
+<rect x="268" y="333" width="52" height="58" rx="5" fill="#D8D0C0" stroke="#5F5E5A" stroke-width="1"/>
+<line x1="294" y1="333" x2="294" y2="391" stroke="#A09888" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" font-weight="bold" x="294" y="343" text-anchor="middle" fill="#2C2C2A">PC817</text>
+<text font-family="sans-serif" font-size="7" x="281" y="362" text-anchor="middle" fill="#5F5E5A">LED</text>
+<text font-family="sans-serif" font-size="7" x="307" y="362" text-anchor="middle" fill="#5F5E5A">TR</text>
+<text font-family="sans-serif" font-size="6" x="264" y="353" text-anchor="end" fill="#888780">1+</text>
+<text font-family="sans-serif" font-size="6" x="264" y="384" text-anchor="end" fill="#888780">2-</text>
+<text font-family="sans-serif" font-size="6" x="323" y="353" fill="#888780">4C</text>
+<text font-family="sans-serif" font-size="6" x="323" y="384" fill="#888780">3E</text>
+<circle cx="268" cy="350" r="2.5" fill="#8A7A60"/>
+<circle cx="268" cy="340" r="2.5" fill="#3B6D11"/>
+<circle cx="268" cy="384" r="2.5" fill="#3B6D11"/>
+<line x1="268" y1="340" x2="268" y2="384" stroke="#3B6D11" stroke-width="1.5" stroke-dasharray="2 2"/>
+<circle cx="320" cy="350" r="2.5" fill="#BA7517"/>
+<circle cx="320" cy="384" r="2.5" fill="#5F5E5A"/>
+<line x1="320" y1="384" x2="445" y2="384" stroke="#5F5E5A" stroke-width="1.5"/>
+<circle cx="445" cy="384" r="3" fill="#5F5E5A"/>
+
+<!-- DC C -->
+<line x1="320" y1="350" x2="332" y2="350" stroke="#BA7517" stroke-width="2"/>
+<rect x="332" y="342" width="30" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="347" y="351" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">100Ω</text>
+<line x1="362" y1="350" x2="372" y2="350" stroke="#BA7517" stroke-width="2"/>
+<circle cx="382" cy="350" r="11" fill="#FAC775" stroke="#BA7517" stroke-width="1.5"/>
+<text font-family="sans-serif" font-size="7" font-weight="bold" x="382" y="350" text-anchor="middle" dominant-baseline="central" fill="#412402">AMAR.</text>
+<line x1="393" y1="350" x2="420" y2="350" stroke="#BA7517" stroke-width="1.5"/>
+<circle cx="420" cy="350" r="3" fill="#BA7517"/>
+
+<!-- SEPARATOR C/BUZZ -->
+<line x1="36" y1="430" x2="740" y2="430" stroke="#D3D1C7" stroke-width="1" stroke-dasharray="4 3"/>
+
+<!-- ===================== BUZZER SECTION ===================== -->
+<text font-family="sans-serif" font-size="9" font-weight="bold" x="44" y="448" fill="#5F5E5A">Buzzer — continuidade Pino→TERRA — escolha com BTN1 ou BTN2</text>
+
+<!-- +3V to 1k to buzzer -->
+<line x1="420" y1="475" x2="408" y2="475" stroke="#BA7517" stroke-width="2"/>
+<rect x="366" y="467" width="42" height="16" rx="3" fill="#E8E0D0" stroke="#7A7060" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" x="387" y="476" text-anchor="middle" dominant-baseline="central" fill="#3d3d3a">1kΩ</text>
+<line x1="366" y1="475" x2="340" y2="475" stroke="#BA7517" stroke-width="2"/>
+
+<!-- Buzzer symbol -->
+<ellipse cx="318" cy="475" rx="22" ry="16" fill="#D8D0C0" stroke="#5F5E5A" stroke-width="1.5"/>
+<text font-family="sans-serif" font-size="8" font-weight="bold" x="318" y="472" text-anchor="middle" fill="#2C2C2A">BUZ</text>
+<text font-family="sans-serif" font-size="7" x="318" y="482" text-anchor="middle" fill="#5F5E5A">3V</text>
+<!-- sound waves -->
+<path d="M342 470 Q350 475 342 480" fill="none" stroke="#5F5E5A" stroke-width="1"/>
+<path d="M346 467 Q357 475 346 483" fill="none" stroke="#5F5E5A" stroke-width="1" opacity="0.6"/>
+
+<line x1="296" y1="475" x2="270" y2="475" stroke="#BA7517" stroke-width="2"/>
+
+<!-- Junction point -->
+<circle cx="270" cy="475" r="3" fill="#8A7A60"/>
+
+<!-- BTN1 branch -->
+<line x1="270" y1="475" x2="270" y2="510" stroke="#8A7A60" stroke-width="2"/>
+<line x1="270" y1="510" x2="160" y2="510" stroke="#8A7A60" stroke-width="2"/>
+
+<!-- BTN1 symbol -->
+<line x1="160" y1="510" x2="130" y2="510" stroke="#8A7A60" stroke-width="2"/>
+<line x1="118" y1="510" x2="100" y2="510" stroke="#8A7A60" stroke-width="2"/>
+<!-- button contacts -->
+<line x1="130" y1="504" x2="130" y2="518" stroke="#5F5E5A" stroke-width="2"/>
+<line x1="118" y1="507" x2="118" y2="516" stroke="#D85A30" stroke-width="2.5"/>
+<text font-family="sans-serif" font-size="9" font-weight="bold" x="124" y="530" text-anchor="middle" fill="#5F5E5A">BTN1</text>
+<text font-family="sans-serif" font-size="8" x="124" y="542" text-anchor="middle" fill="#D85A30">Pino 1</text>
+
+<!-- BTN1 to Pino1 -->
+<line x1="100" y1="510" x2="58" y2="510" stroke="#D85A30" stroke-width="2"/>
+<circle cx="58" cy="510" r="3" fill="#D85A30"/>
+
+<!-- BTN2 branch -->
+<line x1="270" y1="475" x2="270" y2="545" stroke="#8A7A60" stroke-width="1.5" stroke-dasharray="3 2"/>
+<line x1="270" y1="545" x2="160" y2="545" stroke="#8A7A60" stroke-width="2"/>
+
+<!-- BTN2 symbol -->
+<line x1="160" y1="545" x2="130" y2="545" stroke="#8A7A60" stroke-width="2"/>
+<line x1="118" y1="545" x2="100" y2="545" stroke="#8A7A60" stroke-width="2"/>
+<line x1="130" y1="539" x2="130" y2="553" stroke="#5F5E5A" stroke-width="2"/>
+<line x1="118" y1="542" x2="118" y2="551" stroke="#378ADD" stroke-width="2.5"/>
+<text font-family="sans-serif" font-size="9" font-weight="bold" x="124" y="566" text-anchor="middle" fill="#5F5E5A">BTN2</text>
+<text font-family="sans-serif" font-size="8" x="124" y="578" text-anchor="middle" fill="#378ADD">Pino 2</text>
+
+<!-- BTN2 to Pino2 -->
+<line x1="100" y1="545" x2="48" y2="545" stroke="#378ADD" stroke-width="2"/>
+<circle cx="48" cy="545" r="3" fill="#378ADD"/>
+
+<!-- Terra return for buzzer circuit -->
+<line x1="38" y1="570" x2="200" y2="570" stroke="#3B6D11" stroke-width="2.5"/>
+<line x1="200" y1="570" x2="200" y2="490" stroke="#3B6D11" stroke-width="2"/>
+<line x1="200" y1="490" x2="240" y2="490" stroke="#3B6D11" stroke-width="2"/>
+<!-- Arrow to battery minus -->
+<text font-family="sans-serif" font-size="8" font-weight="bold" x="248" y="494" fill="#3B6D11">→ Bat−</text>
+<circle cx="38" cy="570" r="3" fill="#3B6D11"/>
+
+<!-- Note -->
+<rect x="430" y="450" width="288" height="60" rx="6" fill="#FFF8E8" stroke="#BA7517" stroke-width="1"/>
+<text font-family="sans-serif" font-size="8" font-weight="bold" x="574" y="465" text-anchor="middle" fill="#BA7517">⚠ Importante</text>
+<text font-family="sans-serif" font-size="8" x="438" y="480" fill="#3d3d3a">Battery − deve conectar ao TERRA do plugue.</text>
+<text font-family="sans-serif" font-size="8" x="438" y="494" fill="#3d3d3a">Pressione BTN1 ou BTN2 para testar cada pino.</text>
+<text font-family="sans-serif" font-size="8" x="438" y="508" fill="#3d3d3a">Buzzer soa = continuidade com TERRA confirmada.</text>
+
+<!-- ===================== POWER RAILS ===================== -->
+<line x1="420" y1="50" x2="420" y2="420" stroke="#BA7517" stroke-width="2.5"/>
+<text font-family="sans-serif" font-size="9" font-weight="bold" x="420" y="45" text-anchor="middle" fill="#BA7517">+3V</text>
+<circle cx="420" cy="91" r="3" fill="#BA7517"/>
+<circle cx="420" cy="196" r="3" fill="#BA7517"/>
+<circle cx="420" cy="350" r="3" fill="#BA7517"/>
+<circle cx="420" cy="475" r="3" fill="#BA7517"/>
+
+<line x1="445" y1="50" x2="445" y2="420" stroke="#5F5E5A" stroke-width="2.5"/>
+<text font-family="sans-serif" font-size="9" font-weight="bold" x="445" y="45" text-anchor="middle" fill="#5F5E5A">GND</text>
+<circle cx="445" cy="126" r="3" fill="#5F5E5A"/>
+<circle cx="445" cy="231" r="3" fill="#5F5E5A"/>
+<circle cx="445" cy="384" r="3" fill="#5F5E5A"/>
+
+<!-- ===================== BATTERY ===================== -->
+<rect x="468" y="155" width="80" height="90" rx="8" fill="#E0D8C8" stroke="#8A8478" stroke-width="1"/>
+<rect x="476" y="165" width="64" height="70" rx="18" fill="#C8C0B0" stroke="#7A7060" stroke-width="1"/>
+<text font-family="sans-serif" font-size="9" font-weight="bold" x="508" y="202" text-anchor="middle" fill="#3d3d3a">CR2032</text>
+<text font-family="sans-serif" font-size="8" x="508" y="215" text-anchor="middle" fill="#5F5E5A">3V</text>
+<text font-family="sans-serif" font-size="12" font-weight="bold" x="484" y="185" fill="#D85A30">+</text>
+<text font-family="sans-serif" font-size="12" font-weight="bold" x="524" y="185" fill="#5F5E5A">−</text>
+<line x1="486" y1="167" x2="420" y2="167" stroke="#BA7517" stroke-width="1.5" stroke-dasharray="3 2"/>
+<!-- Battery minus to TERRA -->
+<line x1="530" y1="167" x2="560" y2="167" stroke="#3B6D11" stroke-width="1.5" stroke-dasharray="3 2"/>
+<text font-family="sans-serif" font-size="8" font-weight="bold" x="562" y="171" fill="#3B6D11">→ TERRA</text>
+<text font-family="sans-serif" font-size="7" x="562" y="182" fill="#888780">(e GND dos optos)</text>
+
+<!-- ===================== RESULT TABLE ===================== -->
+<rect x="468" y="60" width="250" height="88" rx="6" fill="#E8E0D0" stroke="#B4B2A9" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" font-weight="bold" x="593" y="75" text-anchor="middle" fill="#3d3d3a">Diagnóstico LEDs</text>
+<text font-family="sans-serif" font-size="7.5" x="476" y="91" fill="#3d3d3a">🟢✅ 🔴❌ 🟡❌ → 127V sem terra ⚠️</text>
+<text font-family="sans-serif" font-size="7.5" x="476" y="105" fill="#3d3d3a">🟢✅ 🔴❌ 🟡✅ → 127V com terra ✅</text>
+<text font-family="sans-serif" font-size="7.5" x="476" y="119" fill="#3d3d3a">🟢✅ 🔴✅ 🟡❌ → 220V sem terra ⚠️</text>
+<text font-family="sans-serif" font-size="7.5" x="476" y="133" fill="#3d3d3a">🟢✅ 🔴✅ 🟡✅ → 220V com terra ✅</text>
+<text font-family="sans-serif" font-size="7" x="476" y="143" fill="#888780">todos ❌ → sem tensão</text>
+
+<!-- ===================== COMPONENT LIST ===================== -->
+<rect x="468" y="278" width="250" height="190" rx="6" fill="#E8E0D0" stroke="#B4B2A9" stroke-width="0.8"/>
+<text font-family="sans-serif" font-size="8" font-weight="bold" x="593" y="294" text-anchor="middle" fill="#3d3d3a">Componentes</text>
+<text font-family="sans-serif" font-size="8" x="476" y="310" fill="#3d3d3a">3×  PC817C DIP-4</text>
+<text font-family="sans-serif" font-size="8" x="476" y="325" fill="#3d3d3a">12× Resistor 10kΩ  (4×A + 8×C)</text>
+<text font-family="sans-serif" font-size="8" x="476" y="340" fill="#3d3d3a">2×  Resistor 47kΩ  (Canal B)</text>
+<text font-family="sans-serif" font-size="8" x="476" y="355" fill="#3d3d3a">3×  Resistor 100Ω  (LEDs)</text>
+<text font-family="sans-serif" font-size="8" x="476" y="370" fill="#3d3d3a">1×  Resistor 1kΩ   (Buzzer)</text>
+<text font-family="sans-serif" font-size="8" x="476" y="385" fill="#3d3d3a">4×  Diodo 1N4007</text>
+<text font-family="sans-serif" font-size="8" x="476" y="400" fill="#3d3d3a">1×  LED verde — Canal A</text>
+<text font-family="sans-serif" font-size="8" x="476" y="415" fill="#3d3d3a">1×  LED vermelho — Canal B</text>
+<text font-family="sans-serif" font-size="8" x="476" y="430" fill="#3d3d3a">1×  LED amarelo — Canal C</text>
+<text font-family="sans-serif" font-size="8" x="476" y="445" fill="#3d3d3a">1×  Buzzer ativo 3V</text>
+<text font-family="sans-serif" font-size="8" x="476" y="460" fill="#3d3d3a">2×  Push button NO</text>
+<text font-family="sans-serif" font-size="8" x="476" y="458" fill="#888780"></text>
+<text font-family="sans-serif" font-size="7" x="476" y="472" fill="#888780">* todos resistores do kit ✅</text>
+
+</svg>
