@@ -81,8 +81,34 @@ so_pos = [[-22, 0], [22, 0]];   // 44 mm apart on X
 cell_ci = 4.7;   // inner clearance (4.5mm square terminal + 0.2mm → snug fit)
 cell_ch = 13.0;  // cell wall height above floor
 cell_ct = 1.8;   // wall thickness
+
+// ── Plug nose (NBR 14136 shield face, below box bottom) ──────
+face_h = 6.0;    // nose depth: mm the nose protrudes below Z=0 into socket
+// Shape: 34mm wide × 17mm tall; bottom half full-width, top corners chamfered
+//   diagonal: Δx=9.5mm, Δy=8.5mm → length = √(9.5²+8.5²) ≈ 12.75mm
 // ────────────────────────────────────────────────────────────
 $fn = 64;
+
+// NBR 14136 10A plug nose: 33×16mm symmetric hexagon (chamfers all 4 corners).
+// Widest at Y=0 (33mm), narrows to 14mm at top & bottom via Δx=9.5 Δy=8.0 diagonals.
+// Extends from Z=0 downward to Z=-face_h; pin holes pass through it.
+module plug_nose() {
+    difference() {
+        translate([0, 0, -face_h])
+            linear_extrude(face_h)
+                polygon([
+                    [ -7.0,  8.0],   // top-left
+                    [  7.0,  8.0],   // top-right
+                    [ 16.5,  0.0],   // right (widest)
+                    [  7.0, -8.0],   // bottom-right
+                    [ -7.0, -8.0],   // bottom-left
+                    [-16.5,  0.0],   // left (widest)
+                ]);
+        for (p = [P1, P2, T])
+            translate([p[0], p[1], -face_h - 0.1])
+                cylinder(d=pin_d, h=face_h + 0.2);
+    }
+}
 
 // U-shaped clip around a brass pin. Open face points toward box center [0,0].
 // Rotation: local +Y = away from center, so open mouth faces outward.
@@ -164,6 +190,9 @@ module body() {
     // ── Pin retention cells ──
     for (p = [P1, P2, T])
         pin_cell(p, back=true, front=false);
+
+    // ── Plug nose ──
+    plug_nose();
 }
 
 // ────────────────────────────────────────────────────────────
