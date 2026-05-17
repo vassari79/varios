@@ -83,7 +83,7 @@ cell_ch = 13.0;  // cell wall height above floor
 cell_ct = 1.8;   // wall thickness
 
 // ── Plug nose (NBR 14136 shield face, below box bottom) ──────
-face_h = 6.0;    // nose depth: mm the nose protrudes below Z=0 into socket
+face_h = 10.0;   // nose depth: mm the nose protrudes below Z=0 into socket
 // Shape: 34mm wide × 17mm tall; bottom half full-width, top corners chamfered
 //   diagonal: Δx=9.5mm, Δy=8.5mm → length = √(9.5²+8.5²) ≈ 12.75mm
 // ────────────────────────────────────────────────────────────
