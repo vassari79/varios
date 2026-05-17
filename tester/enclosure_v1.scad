@@ -17,27 +17,28 @@
 //    Perfboard ~50 × 26 mm  (fits on internal standoffs)
 // ============================================================
 
-PART = "both";   // "body" | "lid" | "both"
+PART    = "body";   // "body" | "lid" | "both"
+EXPLODE = 0;       // 0 = assembled, >0 = explode lid upward (e.g. 60)
 
 // ── NBR 14136 10A — pin positions (XY, origin = centroid) ───
 //   P1 (-9.5,  4.5)   P2 (+9.5, +4.5)    ← two upper pins
 //   T  (  0,  -8.5)                        ← earth pin
 //   Distance P1→T along Y = 4.5+8.5 = 13 mm  ✓ (NBR 14136 spec)
 
-P1 = [-9.5,  4.5];   // Pino 1 — phase or L1
-P2 = [ 9.5,  4.5];   // Pino 2 — neutral or L2
-T  = [  0,  -8.5];   // Terra   — earth
+P1 = [-9.5, -1.5];  // Pino 1 — phase (bottom, NBR 14136 10A)
+P2 = [ 9.5, -1.5];  // Pino 2 — neutral (bottom, NBR 14136 10A)
+T  = [  0,   1.5];  // Terra   — earth, 3mm above P-N line (NBR 14136)
 
 // ── Pin holes ────────────────────────────────────────────────
-pin_d      = 4.15;   // shaft hole  (4.0 mm pin + 0.15 tolerance)
+pin_d      = 4.3;    // shaft hole  (4.5 mm pin − 0.2 interference → press-fit)
 pin_base_d = 7.0;    // counterbore ∅ (fits brass shoulder + solder access)
 pin_base_h = 4.0;    // counterbore depth from inside floor
 
 // ── Box body ─────────────────────────────────────────────────
 wall  = 2.2;     // shell wall
 floor = 3.5;     // bottom plate (pin holes pass through here)
-box_w = 56.0;    // external width  (X) — wider than 19 mm pin span
-box_l = 32.0;    // external length (Y) — fits pin triangle + margin
+box_w = 70.0;    // external width  (X)
+box_l = 50.0;    // external length (Y) — wider for board + wiring room
 box_h = 64.0;    // external height (Z) — room for perfboard + components
 rc    = 4.0;     // XY corner radius
 
@@ -52,13 +53,13 @@ lip_clr = 0.25;   // radial clearance lip↔inner wall
 // ── 4 LED holes on lid (row, 11 mm spacing) ──────────────────
 //  Order left→right: 🟢 Verde  🔴 Vermelho  🔵 Azul  🟠 Laranja
 led_d   = 5.3;
-led_xs  = [-16.5, -5.5, 5.5, 16.5];
-led_y   =  5.0;   // offset from lid centerline toward +Y
+led_xs  = [-22.0, -7.5, 7.5, 22.0];  // 4 LEDs, ~14.5 mm spacing
+led_y   =  8.0;   // offset from lid centerline toward +Y
 
 // ── 2 button holes on lid (BTN1 = Pino1, BTN2 = Pino2) ───────
 btn_d  = 7.2;    // 6×6 mm tactile button + 1.2 mm clearance
-btn_xs = [-8.0, 8.0];
-btn_y  = -7.0;   // below LED row
+btn_xs = [-10.0, 10.0];
+btn_y  = -10.0;  // below LED row
 
 // ── M3 screw posts (4 corners inside body) ───────────────────
 post_od  = 6.5;
@@ -70,14 +71,44 @@ px = iw/2 - post_od/2 - post_rim;   // = 21.75
 py = il/2 - post_od/2 - post_rim;   // =  9.55
 post_pos = [[-px,-py], [-px,py], [px,-py], [px,py]];
 
-// ── Board standoffs (2 central, for 50×26 mm perfboard) ──────
+// ── Board standoffs (2 central, for 60×42 mm perfboard) ──────
 so_od  = 4.5;
 so_id  = 1.6;    // M2 self-tap or press-fit pin
-so_h   = 14.0;   // board sits 14 mm above floor
-so_pos = [[-18, 0], [18, 0]];
+so_h   = 22.0;   // board sits 22 mm above floor (clears 13mm pin cells + 9mm wire routing)
+so_pos = [[-22, 0], [22, 0]];   // 44 mm apart on X
 
+// ── Pin retention cells (3-walled clip around each brass pin) ─────
+cell_ci = 4.7;   // inner clearance (4.5mm square terminal + 0.2mm → snug fit)
+cell_ch = 13.0;  // cell wall height above floor
+cell_ct = 1.8;   // wall thickness
 // ────────────────────────────────────────────────────────────
 $fn = 64;
+
+// U-shaped clip around a brass pin. Open face points toward box center [0,0].
+// Rotation: local +Y = away from center, so open mouth faces outward.
+module pin_cell(pos, back=false, front=false) {
+    px = pos[0]; py = pos[1];
+    ang  = atan2(-px, py);
+    half = cell_ci / 2;
+    translate([px, py, floor])
+    rotate([0, 0, ang])
+    union() {
+        // Left wall
+        translate([-(half+cell_ct), -(half+cell_ct), 0])
+            cube([cell_ct, cell_ci + 2*cell_ct, cell_ch]);
+        // Right wall
+        translate([half, -(half+cell_ct), 0])
+            cube([cell_ct, cell_ci + 2*cell_ct, cell_ch]);
+        // Back wall (away from center)
+        if (back)
+            translate([-(half+cell_ct), -(half+cell_ct), 0])
+                cube([cell_ci + 2*cell_ct, cell_ct, cell_ch]);
+        // Front wall (toward center)
+        if (front)
+            translate([-(half+cell_ct), half, 0])
+                cube([cell_ci + 2*cell_ct, cell_ct, cell_ch]);
+    }
+}
 
 module rounded_box(w, l, h, r) {
     r = max(0.5, r);
@@ -129,6 +160,10 @@ module body() {
                 cylinder(d=so_od, h=so_h);
                 cylinder(d=so_id, h=so_h);
             }
+
+    // ── Pin retention cells ──
+    for (p = [P1, P2, T])
+        pin_cell(p, back=true, front=false);
 }
 
 // ────────────────────────────────────────────────────────────
@@ -178,10 +213,9 @@ if (PART == "body") {
             lid();
 
 } else {
-    // Assembled preview
+    // Assembled / exploded preview
     body();
-    // Lid sits on top: lip goes into body (below box_h), plate above
-    translate([0, 0, box_h - lip_h])
+    translate([0, 0, box_h - lip_h + EXPLODE])
         lid();
 }
 
