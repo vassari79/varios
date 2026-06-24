@@ -1,0 +1,269 @@
+\documentclass[a4paper]{article}
+\usepackage{amsmath, amsthm, amsfonts, amssymb, mathrsfs}
+\usepackage[all]{xy}
+\usepackage{color}
+\usepackage{authblk}
+\usepackage{afterpage}
+\usepackage{xcolor}
+\usepackage[backref=page]{hyperref}
+\usepackage{aliascnt}
+\usepackage[capitalise]{cleveref}
+\usepackage[a4paper, bindingoffset=0.2in, left=1.3in, right=1.3in, top=1.4in, bottom=1.5in, footskip=.5in]{geometry}
+\usepackage{leftindex}
+\usepackage{extarrows}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{patterns}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+
+\newaliascnt{proposition}{theorem}
+\newtheorem{proposition}[proposition]{Proposition}
+\aliascntresetthe{proposition}
+\crefname{proposition}{Proposition}{Propositions}
+
+\newaliascnt{corollary}{theorem}
+\newtheorem{corollary}[corollary]{Corollary}
+\aliascntresetthe{corollary}
+\crefname{corollary}{Corollary}{Corollaries}
+
+\newaliascnt{lemma}{theorem}
+\newtheorem{lemma}[lemma]{Lemma}
+\aliascntresetthe{lemma}
+\crefname{lemma}{Lemma}{Lemmas}
+
+\theoremstyle{definition}
+\newaliascnt{definition}{theorem}
+\newtheorem{definition}[definition]{Definition}
+\aliascntresetthe{definition}
+\crefname{definition}{Definition}{Definitions}
+
+\newaliascnt{example}{theorem}
+\newtheorem{example}[example]{Example}
+\aliascntresetthe{example}
+\crefname{example}{Example}{Examples}
+
+\newtheorem{remark}{Remark}
+
+\newaliascnt{notation}{theorem}
+\newtheorem{notation}[notation]{Notation}
+\aliascntresetthe{notation}
+\crefname{notation}{Notation}{Notations}
+
+\theoremstyle{plain}
+\newtheorem*{theorem*}{Theorem}
+\newtheorem*{proposition*}{Proposition}
+\newtheorem*{corollary*}{Corollary}
+\newtheorem*{lemma*}{Lemma}
+\theoremstyle{definition}
+\newtheorem*{definition*}{Definition}
+\newtheorem*{remark*}{Remark}
+\newtheorem*{notation*}{Notation}
+
+\newcommand{\CC}{\mathbb{C}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\ZZ}{\mathbb{Z}}
+
+\newcommand{\UUb}{\mathbb{U}}
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\OO}{\mathcal{O}}
+\newcommand{\UU}{\mathcal{U}}
+\newcommand{\DD}{\mathcal{D}}
+\newcommand{\FF}{\mathcal{F}}
+\newcommand{\EE}{\mathcal{E}}
+\newcommand{\LL}{\mathcal{L}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\BB}{\mathcal{B}}
+\newcommand{\KK}{\mathcal{K}}
+\newcommand{\IIF}{\mathcal{I_F}}
+\newcommand{\HH}{\mathcal{H}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\II}{\mathscr{I}}
+\newcommand{\JJ}{\mathscr{J}}
+\newcommand{\pp}{\mathfrak{p}}
+
+\DeclareMathAlphabet{\mathpzc}{OT1}{pzc}{m}{it}
+
+\renewcommand{\ker}{\mathrm{Ker}}
+\renewcommand{\ln}{\mathrm{ln}}
+\newcommand{\id}{\mathrm{id}}
+\newcommand{\hol}{\mathrm{Hol}}
+\newcommand{\aut}{\mathrm{Aut}}
+\newcommand{\im}{\mathrm{Im}}
+\newcommand{\codim}{\mathrm{codim}}
+\newcommand{\ann}{\mathrm{ann}}
+\newcommand{\proj}{\mathrm{Proj}}
+\newcommand{\ext}{\mathrm{Ext}}
+\renewcommand{\hom}{\mathrm{Hom}}
+\newcommand{\sing}{\mathrm{Sing}}
+\newcommand{\reg}{\mathrm{Reg}}
+\newcommand{\per}{\mathpzc{Per}(\omega)}
+\newcommand{\kup}{\mathpzc{Kup}(\omega)}
+\newcommand{\kupv}{\mathpzc{Kup}(\varpi)}
+\newcommand{\wt}{\widetilde}
+\newcommand{\defom}[1][]{
+  \if\relax\detokenize{#1}\relax
+    \omega_\varepsilon
+  \else
+    \leftindex_{#1}\omega_\varepsilon
+  \fi
+}
+\usepackage{xparse}
+
+\NewDocumentCommand{\unfom}{oo}{%
+  \IfNoValueTF{#1}{%
+    \IfNoValueTF{#2}{%
+      \widetilde{\omega}_\varepsilon                            % no indices
+    }{%
+      \leftindex^{#2}{\widetilde{\omega}}_\varepsilon          % top-left only
+    }%
+  }{%
+    \IfNoValueTF{#2}{%
+      \leftindex_{#1}{\widetilde{\omega}}_\varepsilon          % bottom-left only
+    }{%
+      \leftindex^{#2}_{#1}{\widetilde{\omega}}_\varepsilon     % both
+    }%
+  }%
+}
+
+% \title{Holonomy is stable under unfoldings}
+% \author[1]{Ariel Molinuevo\thanks{The author was fully supported by Universidade Federal do Rio de Janeiro, Brasil.}}
+% \author[2]{Federico Quallbrunn\thanks{The author was fully supported by CONICET, Argentina.}}
+% \affil[1]{\small Instituto de Matem\'atica, Universidade Federal do Rio de Janeiro, Brazil.}
+% \affil[2]{\small Departamento de Matem\'atica, Facultad de Ciencias Exactas y Naturales, Universidad de Buenos Aires, Argentina.}
+% \date{}
+
+\newcommand\blankpage{
+    \null
+    \thispagestyle{empty}
+    \addtocounter{page}{-1}
+    \newpage}
+
+
+% \author{}
+
+\begin{document}
+
+\rotatebox{-90}{%
+\begin{tikzpicture}[scale=1.2]
+  % Parameters
+  \def\a{2}   % half-width at top
+  \def\b{0.6} % perspective foreshortening (y-axis)
+  \def\h{3}   % height of paraboloid
+
+  % Floor plane rectangle at z=0 (appears on the left after rotation)
+  \fill[gray!12] ({-\a-0.5}, {-\b*\a-0.4}) rectangle ({\a+0.5}, {\b*\a+0.4});
+  \draw[gray!60, thin] ({-\a-0.5}, {-\b*\a-0.4}) rectangle ({\a+0.5}, {\b*\a+0.4});
+
+  % Projection of paraboloid onto the floor
+  \fill[blue!12] (0,0) ellipse[x radius=\a, y radius={\b*\a}];
+  \pgfmathsetmacro{\rsmall}{\a*sqrt(1/\h)}
+  \draw[thick, black!70!black] ({cos(40)*\a}, {\b*\a*sin(40)}) arc[x radius=\a, y radius={\b*\a}, start angle=40, end angle=-220];
+  \draw[gray!50, thick, dashed] ({cos(40)*\a}, {\b*\a*sin(40)}) arc[x radius=\a, y radius={\b*\a}, start angle=40, end angle=140];
+
+  % Left and right bounding parabolas
+  \draw[thick, blue!70!black]
+      plot[domain=0:\h*85/100, samples=40]
+          ({-\a*sqrt(\x/\h)}, \x);
+  \draw[thick, blue!70!black, dashed]
+      plot[domain=\h*85/100:\h, samples=20]
+          ({-\a*sqrt(\x/\h)}, \x);
+  \draw[thick, blue!70!black]
+      plot[domain=0:\h*85/100, samples=40]
+          ({\a*sqrt(\x/\h)}, \x);
+  \draw[thick, blue!70!black, dashed]
+      plot[domain=\h*85/100:\h, samples=20]
+          ({\a*sqrt(\x/\h)}, \x);
+
+  % Top ellipse (solid front, dashed back)
+  \draw[thick, blue!70!black]
+      (\a, \h) arc[x radius=\a, y radius=\b*\a, start angle=0, end angle=-180];
+  \draw[thick, blue!70!black]
+      (\a, \h) arc[x radius=\a, y radius=\b*\a, start angle=0, end angle=180];
+
+  % Front and back meridians of first paraboloid
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  % Above floor (z=0 to z=h-1=2): solid up to 85%, dashed top 15%
+  \draw[thick, blue!70!black]
+      plot[domain=0:(\h-1)*75/100, samples=40]
+          ({-\a*sqrt((\x+1)/\h)}, \x);
+  \draw[thick, blue!70!black, dashed]
+      plot[domain=(\h-1)*75/100:\h-1, samples=20]
+          ({-\a*sqrt((\x+1)/\h)}, \x);
+  \draw[thick, blue!70!black]
+      plot[domain=0:(\h-1)*75/100, samples=40]
+          ({\a*sqrt((\x+1)/\h)}, \x);
+  \draw[thick, blue!70!black, dashed]
+      plot[domain=(\h-1)*75/100:\h-1, samples=20]
+          ({\a*sqrt((\x+1)/\h)}, \x);
+  % Below floor (z=-1 to z=0): dashed
+  \draw[thick, blue!70!black, dashed]
+      plot[domain=-1:0, samples=30]
+          ({-\a*sqrt((\x+1)/\h)}, \x);
+  \draw[thick, blue!70!black, dashed]
+      plot[domain=-1:0, samples=30]
+          ({\a*sqrt((\x+1)/\h)}, \x);
+
+  % Smaller inner circle on floor (drawn last to stay on top)
+  \draw[thick, black] (\rsmall, 0) arc[x radius=\rsmall, y radius={\b*\rsmall}, start angle=0, end angle=-180];
+  \draw[gray!50, thick, dashed] (\rsmall, 0) arc[x radius=\rsmall, y radius={\b*\rsmall}, start angle=0, end angle=180];
+
+  % First paraboloid meridians (drawn after inner circle to appear on top)
+  \draw[thick, blue!70!black]
+      plot[domain=0:\h*55/100, samples=40]
+          ({0}, {\x - \b*\a*sqrt(\x/\h)});
+  \draw[thin, blue!70!black]
+      plot[domain=\h*55/100:\h, samples=30]
+          ({0}, {\x - \b*\a*sqrt(\x/\h)});
+  \draw[thin, blue!50!black, dashed]
+      plot[domain=\h*13/100:\h, samples=70]
+          ({0}, {\x + \b*\a*sqrt(\x/\h)});
+
+  % Front and back meridians of second paraboloid
+  \draw[thick, blue!70!black]
+      plot[domain=0:(\h-1)*75/100, samples=40]
+          ({0}, {\x - \b*\a*sqrt((\x+1)/\h)});
+  \draw[thick, blue!70!black, dashed]
+      plot[domain=(\h-1)*75/100:\h-1, samples=20]
+          ({0}, {\x - \b*\a*sqrt((\x+1)/\h)});
+  \draw[thick, blue!70!black, dashed]
+      plot[domain=-0.5:0, samples=30]
+          ({0}, {\x - \b*\a*sqrt((\x+1)/\h)});
+  \draw[thin, blue!50!black, dashed]
+      plot[domain=(\h-1)*10/100:\h-1, samples=60]
+          ({0}, {\x + \b*\a*sqrt((\x+1)/\h)});
+  % Top ellipse of second paraboloid at z=h-1=2
+  \draw[thick, blue!70!black]
+      ({cos(25)*\a}, {\h-1+\b*\a*sin(25)}) arc[x radius=\a, y radius=\b*\a, start angle=25, end angle=-205];
+  \draw[thick, blue!70!black, dashed]
+      ({cos(25)*\a}, {\h-1+\b*\a*sin(25)}) arc[x radius=\a, y radius=\b*\a, start angle=25, end angle=180];
+
+  % Vertex dot (drawn last to stay on top)
+  \fill (0,0) circle (1.5pt);
+
+\end{tikzpicture}%
+}
+\end{document}
