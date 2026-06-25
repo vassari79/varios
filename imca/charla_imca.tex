@@ -77,9 +77,12 @@
       plot[domain=-1:0, samples=30]
           ({\a*sqrt((\x+1)/\h)}, \x);
 
-  % Smaller inner circle on floor (drawn last to stay on top)
+  % Smaller inner circles on floor (drawn last to stay on top)
+  \pgfmathsetmacro{\rsmaller}{\a*sqrt(0.3/\h)}
   \draw[thick, black] (\rsmall, 0) arc[x radius=\rsmall, y radius={\b*\rsmall}, start angle=0, end angle=-180];
   \draw[gray!50, thick, dashed] (\rsmall, 0) arc[x radius=\rsmall, y radius={\b*\rsmall}, start angle=0, end angle=180];
+  \draw[thick, black] ({cos(35)*\rsmaller}, {\b*\rsmaller*sin(35)}) arc[x radius=\rsmaller, y radius={\b*\rsmaller}, start angle=35, end angle=-215];
+  \draw[gray!50, thick, dashed] ({cos(35)*\rsmaller}, {\b*\rsmaller*sin(35)}) arc[x radius=\rsmaller, y radius={\b*\rsmaller}, start angle=35, end angle=145];
 
   % First paraboloid meridians (drawn after inner circle to appear on top)
   \draw[thick, blue!70!black]
@@ -117,10 +120,10 @@
 \end{tikzpicture}%
 }
 \hfill
-\raisebox{2.97cm}{%
+\raisebox{1.99cm}{%
 % Figure 2: 4 planes through the y-axis (foliation by hyperplanes)
 \rotatebox{-90}{%
-\begin{tikzpicture}[scale=1.2]
+\begin{tikzpicture}[scale=1.0]
   \def\b{0.45}   % depth foreshortening
   \def\R{2.2}    % plane half-extent
   \def\H{3}      % axis length
