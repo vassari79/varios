@@ -16,136 +16,9 @@
 \usepackage{tikz}
 \usetikzlibrary{patterns}
 
-\theoremstyle{plain}
-\newtheorem{theorem}{Theorem}[section]
-
-\newaliascnt{proposition}{theorem}
-\newtheorem{proposition}[proposition]{Proposition}
-\aliascntresetthe{proposition}
-\crefname{proposition}{Proposition}{Propositions}
-
-\newaliascnt{corollary}{theorem}
-\newtheorem{corollary}[corollary]{Corollary}
-\aliascntresetthe{corollary}
-\crefname{corollary}{Corollary}{Corollaries}
-
-\newaliascnt{lemma}{theorem}
-\newtheorem{lemma}[lemma]{Lemma}
-\aliascntresetthe{lemma}
-\crefname{lemma}{Lemma}{Lemmas}
-
-\theoremstyle{definition}
-\newaliascnt{definition}{theorem}
-\newtheorem{definition}[definition]{Definition}
-\aliascntresetthe{definition}
-\crefname{definition}{Definition}{Definitions}
-
-\newaliascnt{example}{theorem}
-\newtheorem{example}[example]{Example}
-\aliascntresetthe{example}
-\crefname{example}{Example}{Examples}
-
-\newtheorem{remark}{Remark}
-
-\newaliascnt{notation}{theorem}
-\newtheorem{notation}[notation]{Notation}
-\aliascntresetthe{notation}
-\crefname{notation}{Notation}{Notations}
-
-\theoremstyle{plain}
-\newtheorem*{theorem*}{Theorem}
-\newtheorem*{proposition*}{Proposition}
-\newtheorem*{corollary*}{Corollary}
-\newtheorem*{lemma*}{Lemma}
-\theoremstyle{definition}
-\newtheorem*{definition*}{Definition}
-\newtheorem*{remark*}{Remark}
-\newtheorem*{notation*}{Notation}
-
-\newcommand{\CC}{\mathbb{C}}
-\newcommand{\PP}{\mathbb{P}}
-\newcommand{\ZZ}{\mathbb{Z}}
-
-\newcommand{\UUb}{\mathbb{U}}
-\newcommand{\NN}{\mathbb{N}}
-\newcommand{\OO}{\mathcal{O}}
-\newcommand{\UU}{\mathcal{U}}
-\newcommand{\DD}{\mathcal{D}}
-\newcommand{\FF}{\mathcal{F}}
-\newcommand{\EE}{\mathcal{E}}
-\newcommand{\LL}{\mathcal{L}}
-\newcommand{\RR}{\mathbb{R}}
-\newcommand{\BB}{\mathcal{B}}
-\newcommand{\KK}{\mathcal{K}}
-\newcommand{\IIF}{\mathcal{I_F}}
-\newcommand{\HH}{\mathcal{H}}
-\newcommand{\C}{\mathcal{C}}
-\newcommand{\II}{\mathscr{I}}
-\newcommand{\JJ}{\mathscr{J}}
-\newcommand{\pp}{\mathfrak{p}}
-
-\DeclareMathAlphabet{\mathpzc}{OT1}{pzc}{m}{it}
-
-\renewcommand{\ker}{\mathrm{Ker}}
-\renewcommand{\ln}{\mathrm{ln}}
-\newcommand{\id}{\mathrm{id}}
-\newcommand{\hol}{\mathrm{Hol}}
-\newcommand{\aut}{\mathrm{Aut}}
-\newcommand{\im}{\mathrm{Im}}
-\newcommand{\codim}{\mathrm{codim}}
-\newcommand{\ann}{\mathrm{ann}}
-\newcommand{\proj}{\mathrm{Proj}}
-\newcommand{\ext}{\mathrm{Ext}}
-\renewcommand{\hom}{\mathrm{Hom}}
-\newcommand{\sing}{\mathrm{Sing}}
-\newcommand{\reg}{\mathrm{Reg}}
-\newcommand{\per}{\mathpzc{Per}(\omega)}
-\newcommand{\kup}{\mathpzc{Kup}(\omega)}
-\newcommand{\kupv}{\mathpzc{Kup}(\varpi)}
-\newcommand{\wt}{\widetilde}
-\newcommand{\defom}[1][]{
-  \if\relax\detokenize{#1}\relax
-    \omega_\varepsilon
-  \else
-    \leftindex_{#1}\omega_\varepsilon
-  \fi
-}
-\usepackage{xparse}
-
-\NewDocumentCommand{\unfom}{oo}{%
-  \IfNoValueTF{#1}{%
-    \IfNoValueTF{#2}{%
-      \widetilde{\omega}_\varepsilon                            % no indices
-    }{%
-      \leftindex^{#2}{\widetilde{\omega}}_\varepsilon          % top-left only
-    }%
-  }{%
-    \IfNoValueTF{#2}{%
-      \leftindex_{#1}{\widetilde{\omega}}_\varepsilon          % bottom-left only
-    }{%
-      \leftindex^{#2}_{#1}{\widetilde{\omega}}_\varepsilon     % both
-    }%
-  }%
-}
-
-% \title{Holonomy is stable under unfoldings}
-% \author[1]{Ariel Molinuevo\thanks{The author was fully supported by Universidade Federal do Rio de Janeiro, Brasil.}}
-% \author[2]{Federico Quallbrunn\thanks{The author was fully supported by CONICET, Argentina.}}
-% \affil[1]{\small Instituto de Matem\'atica, Universidade Federal do Rio de Janeiro, Brazil.}
-% \affil[2]{\small Departamento de Matem\'atica, Facultad de Ciencias Exactas y Naturales, Universidad de Buenos Aires, Argentina.}
-% \date{}
-
-\newcommand\blankpage{
-    \null
-    \thispagestyle{empty}
-    \addtocounter{page}{-1}
-    \newpage}
-
-
-% \author{}
-
 \begin{document}
 
+\noindent\makebox[\textwidth][c]{%
 \rotatebox{-90}{%
 \begin{tikzpicture}[scale=1.2]
   % Parameters
@@ -182,29 +55,6 @@
       (\a, \h) arc[x radius=\a, y radius=\b*\a, start angle=0, end angle=-180];
   \draw[thick, blue!70!black]
       (\a, \h) arc[x radius=\a, y radius=\b*\a, start angle=0, end angle=180];
-
-  % Front and back meridians of first paraboloid
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
 
   % Above floor (z=0 to z=h-1=2): solid up to 85%, dashed top 15%
   \draw[thick, blue!70!black]
@@ -266,4 +116,121 @@
 
 \end{tikzpicture}%
 }
+\hfill
+\raisebox{2.97cm}{%
+% Figure 2: 4 planes through the y-axis (foliation by hyperplanes)
+\rotatebox{-90}{%
+\begin{tikzpicture}[scale=1.2]
+  \def\b{0.45}   % depth foreshortening
+  \def\R{2.2}    % plane half-extent
+  \def\H{3}      % axis length
+
+  % Each plane at angle \ang (degrees) has corners:
+  %   P1=(-R cos θ, -b R sin θ),  P2=(R cos θ, b R sin θ)
+  %   P3=(R cos θ, H + b R sin θ), P4=(-R cos θ, H - b R sin θ)
+
+  % y=0 splits each plane: ML=(-R cosθ, -bR sinθ), MR=(R cosθ, bR sinθ)
+  % Depth ordering flips at x=0:
+  %   x≤0: back→front = {115, 150, 20, 55}
+  %   x≥0: back→front = {55, 20, 150, 115}
+
+  % ── Below y=0, left half (x≤0) ──────────────────────────────────────────
+  \begin{scope}\clip (-5,-5) rectangle (0,5);
+  \foreach \ang in {115, 150, 20, 55} {
+    \fill[blue!10]
+      ({-\R*cos(\ang)}, {-\H/2-\b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, {-\H/2+\b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, {     \b*\R*sin(\ang)}) --
+      ({-\R*cos(\ang)}, {    -\b*\R*sin(\ang)}) -- cycle;
+    \draw[blue!70!black]
+      ({-\R*cos(\ang)}, {-\H/2-\b*\R*sin(\ang)}) --
+      ({-\R*cos(\ang)}, {    -\b*\R*sin(\ang)});
+    \draw[blue!70!black]
+      ({-\R*cos(\ang)}, {-\H/2-\b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, {-\H/2+\b*\R*sin(\ang)});
+    \draw[blue!70!black]
+      ({ \R*cos(\ang)}, {-\H/2+\b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, {     \b*\R*sin(\ang)});
+  }
+  \end{scope}
+  % ── Below y=0, right half (x≥0) ─────────────────────────────────────────
+  \begin{scope}\clip (0,-5) rectangle (5,5);
+  \foreach \ang in {55, 20, 150, 115} {
+    \fill[blue!10]
+      ({-\R*cos(\ang)}, {-\H/2-\b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, {-\H/2+\b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, {     \b*\R*sin(\ang)}) --
+      ({-\R*cos(\ang)}, {    -\b*\R*sin(\ang)}) -- cycle;
+    \draw[blue!70!black]
+      ({-\R*cos(\ang)}, {-\H/2-\b*\R*sin(\ang)}) --
+      ({-\R*cos(\ang)}, {    -\b*\R*sin(\ang)});
+    \draw[blue!70!black]
+      ({-\R*cos(\ang)}, {-\H/2-\b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, {-\H/2+\b*\R*sin(\ang)});
+    \draw[blue!70!black]
+      ({ \R*cos(\ang)}, {-\H/2+\b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, {     \b*\R*sin(\ang)});
+  }
+  \end{scope}
+
+  % Plane y=0 (contains x- and z-axes): parallelogram in oblique projection
+  % x-direction: TikZ (1,0); z-direction (visual oblique): TikZ (-1,1)
+  % corners = (±Rx + s, ∓s) where Rx = R+0.5, s = 1.0
+  \fill[gray!25, opacity=0.85]
+    ({\R+1.5}, {-1.0}) -- ({\R-0.5}, { 1.0}) --
+    ({-\R-1.5}, { 1.0}) -- ({-\R+0.5}, {-1.0}) -- cycle;
+  \draw[gray!60, thick]
+    ({\R+1.5}, {-1.0}) -- ({\R-0.5}, { 1.0}) --
+    ({-\R-1.5}, { 1.0}) -- ({-\R+0.5}, {-1.0}) -- cycle;
+
+  % ── Above y=0, left half (x≤0) ──────────────────────────────────────────
+  \begin{scope}\clip (-5,-5) rectangle (0,5);
+  \foreach \ang in {115, 150, 20, 55} {
+    \fill[blue!10]
+      ({-\R*cos(\ang)}, {    -\b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, {     \b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, { \H/2+\b*\R*sin(\ang)}) --
+      ({-\R*cos(\ang)}, { \H/2-\b*\R*sin(\ang)}) -- cycle;
+    \draw[blue!70!black]
+      ({ \R*cos(\ang)}, {     \b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, { \H/2+\b*\R*sin(\ang)});
+    \draw[blue!70!black]
+      ({ \R*cos(\ang)}, { \H/2+\b*\R*sin(\ang)}) --
+      ({-\R*cos(\ang)}, { \H/2-\b*\R*sin(\ang)});
+    \draw[blue!70!black]
+      ({-\R*cos(\ang)}, { \H/2-\b*\R*sin(\ang)}) --
+      ({-\R*cos(\ang)}, {    -\b*\R*sin(\ang)});
+  }
+  \end{scope}
+  % ── Above y=0, right half (x≥0) ─────────────────────────────────────────
+  \begin{scope}\clip (0,-5) rectangle (5,5);
+  \foreach \ang in {55, 20, 150, 115} {
+    \fill[blue!10]
+      ({-\R*cos(\ang)}, {    -\b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, {     \b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, { \H/2+\b*\R*sin(\ang)}) --
+      ({-\R*cos(\ang)}, { \H/2-\b*\R*sin(\ang)}) -- cycle;
+    \draw[blue!70!black]
+      ({ \R*cos(\ang)}, {     \b*\R*sin(\ang)}) --
+      ({ \R*cos(\ang)}, { \H/2+\b*\R*sin(\ang)});
+    \draw[blue!70!black]
+      ({ \R*cos(\ang)}, { \H/2+\b*\R*sin(\ang)}) --
+      ({-\R*cos(\ang)}, { \H/2-\b*\R*sin(\ang)});
+    \draw[blue!70!black]
+      ({-\R*cos(\ang)}, { \H/2-\b*\R*sin(\ang)}) --
+      ({-\R*cos(\ang)}, {    -\b*\R*sin(\ang)});
+  }
+  \end{scope}
+
+  % Three coordinate axes centred at origin
+  \draw[very thick] (0, {-\H/2-0.2}) -- (0, {\H/2+0.4});
+  \draw[thick] ({-\R-0.3}, 0) -- ({\R+0.4}, 0);
+  \draw[thick] (0.6, -0.6) -- (-1.1, 1.1);
+  \fill (0, 0) circle (1.5pt);
+
+\end{tikzpicture}%
+}% end raisebox
+}% end rotatebox
+}% end makebox
+
 \end{document}
