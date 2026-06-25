@@ -16,6 +16,23 @@
 \usepackage{tikz}
 \usetikzlibrary{patterns}
 
+% Draw a line in two styles: dashed from #1 to split point #2, solid from #2 to #3
+\newcommand{\dashsolid}[3]{%
+  \draw[thick, dashed] #1 -- #2;%
+  \draw[thick]         #2 -- #3;%
+}
+% \angline{angle}{dashed-end dist}{solid-end dist}
+% From origin: dashed from 0 to #2, solid from #2 to #3, all at angle #1 (degrees)
+\newcommand{\angline}[3]{%
+  \dashsolid{(0,0)}{({#2*cos(#1)},{#2*sin(#1)})}{({#3*cos(#1)},{#3*sin(#1)})}%
+}
+% \originline{angle}{dashed-length}{solid-length}
+% From origin: dashed toward angle #1 for length #2, solid toward opposite direction for length #3
+\newcommand{\originline}[3]{%
+  \draw[thick, dashed] (0,0) -- ({#2*cos(#1)},{#2*sin(#1)});%
+  \draw[thick]         (0,0) -- ({-#3*cos(#1)},{-#3*sin(#1)});%
+}
+
 \begin{document}
 
 \noindent\makebox[\textwidth][c]{%
@@ -115,15 +132,18 @@
       ({cos(25)*\a}, {\h-1+\b*\a*sin(25)}) arc[x radius=\a, y radius=\b*\a, start angle=25, end angle=180];
 
   % Vertex dot (drawn last to stay on top)
-  \fill (0,0) circle (1.5pt);
+  \fill (0,0) circle (2.5pt);
+
+  % Label below figure (rotate=90 cancels the outer -90° rotation)
+  \node[rotate=90, font=\small] at (3.2, 1.0) {Singularidad no persistente};
 
 \end{tikzpicture}%
 }
 \hfill
-\raisebox{1.99cm}{%
+\raisebox{1.5cm}{%
 % Figure 2: 4 planes through the y-axis (foliation by hyperplanes)
 \rotatebox{-90}{%
-\begin{tikzpicture}[scale=1.0]
+\begin{tikzpicture}[scale=.9]
   \def\b{0.45}   % depth foreshortening
   \def\R{2.2}    % plane half-extent
   \def\H{3}      % axis length
@@ -186,7 +206,6 @@
     ({\R+1.5}, {-1.0}) -- ({\R-0.5}, { 1.0}) --
     ({-\R-1.5}, { 1.0}) -- ({-\R+0.5}, {-1.0}) -- cycle;
 
-  % ── Above y=0, left half (x≤0) ──────────────────────────────────────────
   \begin{scope}\clip (-5,-5) rectangle (0,5);
   \foreach \ang in {115, 150, 20, 55} {
     \fill[blue!10]
@@ -225,11 +244,41 @@
   }
   \end{scope}
 
+  % Lines on y=0 plane: z=x and z=-x  (6 tunable parameters)
+  \pgfmathsetmacro{\angzx}{33}       % angle of z=x toward z>0 end (dashed)
+  \pgfmathsetmacro{\Lzxdash}{1.5}    % z=x dashed (z>0) length
+  \pgfmathsetmacro{\Lzxfull}{1.5}    % z=x solid  (z<0) length
+  \pgfmathsetmacro{\angzmx}{165}     % angle of z=-x toward z>0 end (dashed)
+  \pgfmathsetmacro{\Lzmxdash}{1.3}   % z=-x dashed (z>0) length
+  \pgfmathsetmacro{\Lzmxfull}{2.0}   % z=-x solid  (z<0) length
+  % z=x:  dashed end --> origin --> solid end
+  \originline{\angzx}{\Lzxdash}{\Lzxfull}
+  % z=-x: dashed end --> origin --> solid end
+  \originline{\angzmx}{\Lzmxdash}{\Lzmxfull}
+  \angline{165}{1.3}{2.0}
+    % x-axis (y=z=0) and z-axis (x=y=0) tunable parameters
+%   \pgfmathsetmacro{\angXax}{10}        % angle of x-axis toward x>0 end (dashed)
+%   \pgfmathsetmacro{\LXdash}{2.1}      % x-axis dashed (x>0) length
+%   \pgfmathsetmacro{\LXfull}{2.1}      % x-axis solid  (x<0) length
+  \pgfmathsetmacro{\angZax}{135}      % angle of z-axis toward z>0 end (dashed)
+  \pgfmathsetmacro{\LZdash}{1.3}     % z-axis dashed (z>0) length
+  \pgfmathsetmacro{\LZfull}{1.3}     % z-axis solid  (z<0) length
+  \angline{10}{2}{2.1}
+  \angline{190}{1.2}{2.1}
   % Three coordinate axes centred at origin
-  \draw[very thick] (0, {-\H/2-0.2}) -- (0, {\H/2+0.4});
-  \draw[thick] ({-\R-0.3}, 0) -- ({\R+0.4}, 0);
-  \draw[thick] (0.6, -0.6) -- (-1.1, 1.1);
-  \fill (0, 0) circle (1.5pt);
+  \draw[very thick] (0, {-\H/2-0.2}) -- (0, {\H/2+0.4});   % y-axis
+  % x-axis (y=z=0): dashed end --> origin --> solid end
+  % x-axis (y=z=0): dashed end --> origin --> solid end
+%   \originline{\angXax}{\LXdash}{\LXfull}
+%   \angline{10}{2}{2.1}
+  % z-axis (x=y=0): dashed end --> origin --> solid end
+%   \originline{\angZax}{\LZdash}{\LZfull}
+  \originline{135}{0}{1.3}
+  \angline{135}{1.3}{1.3}
+  \fill (0, 0) circle (3.3pt);
+
+  % Label below figure
+  \node[rotate=90, font=\small] at (4.2, 0) {Singularidad persistente};
 
 \end{tikzpicture}%
 }% end raisebox
