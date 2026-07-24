@@ -1,0 +1,14 @@
+# Secrets — never commit
+signal_detector/secrets.h
+
+# Runtime state
+signal_detector/baseline.json
+signal_detector/marks.json
+
+# Arduino build artifacts
+signal_detector/build/
+*.hex
+*.bin
+
+# Python
+signal_detector/__pycache__/

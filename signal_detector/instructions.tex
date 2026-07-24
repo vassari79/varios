@@ -1,0 +1,349 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+
+\definecolor{codebg}{gray}{0.95}
+\definecolor{rule}{gray}{0.6}
+\definecolor{warnbg}{RGB}{255,247,230}
+\definecolor{warnrule}{RGB}{200,140,0}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single, rulecolor=\color{rule},
+  breaklines=true, columns=fullflexible,
+  keepspaces=true, xleftmargin=0pt, framexleftmargin=4pt,
+  aboveskip=6pt, belowskip=6pt,
+}
+
+\newcommand{\key}[1]{\fbox{\ttfamily #1}}
+
+% Simple "note" box.
+\newcommand{\notebox}[1]{%
+  \par\smallskip\noindent
+  \fcolorbox{warnrule}{warnbg}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\small #1}}%
+  \par\smallskip}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small signal\_detector}
+\rhead{\small operating manual}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setlist{itemsep=2pt, topsep=3pt}
+
+\title{\vspace{-1.5cm}\textbf{signal\_detector}\\[2pt]
+\large Classroom phone-presence detector --- setup and operating manual}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+\vspace{-1cm}
+
+\section{What it is}
+
+Two ESP32-S3 boards act as passive 2.4\,GHz radio sensors. Each one listens for
+WiFi and Bluetooth activity, and every $\sim$2\,s reports what it heard to a
+Python program (\texttt{collector.py}) running in Termux on your phone. The
+phone keeps a \emph{baseline} of the devices normally present in the empty room,
+then shows a live table of any \emph{extra} devices, using the two boards to
+place each one in a rough corner of the room. It also tracks how much each
+device transmits and flags short \emph{episodes} of use --- a phone picked up for
+a moment --- buzzing you when one starts near a board, and leaving a ``used
+Xs ago'' marker so you can step out for a few minutes and review what happened
+when you return. A web page (served by the phone) shows the same list, lets you
+mark a device \emph{watch} or \emph{disregard}, and graphs any device's traffic
+over several time windows (5\,min up to 1\,h\,40\,min), with episodes shaded.
+
+\notebox{\textbf{Read this before trusting it.} A phone that is \emph{off} or in
+\emph{airplane mode} emits nothing and is invisible --- which is exactly what you
+tell students to do, so a careful cheater defeats it for free. Modern phones
+rotate randomized MAC addresses, so the device \emph{count} is inflated (one
+phone can appear as several rows). Location is corner-level, never a single desk.
+Treat this as a live map of \emph{active radios} plus a deterrent --- not as
+proof, and not as a substitute for collecting phones at the door.}
+
+\section{What you need}
+
+\begin{itemize}
+  \item \textbf{2$\times$ ESP32-S3-DevKitC-1} boards (WROOM-1).
+  \item 2 USB-C cables and 2 power sources (power banks or chargers) for the room.
+  \item A laptop with the \textbf{Arduino IDE} (only to flash the boards, once).
+  \item An \textbf{Android phone} with \textbf{Termux} and \textbf{Termux:API}
+        (both from F-Droid --- see the note below).
+  \item A WiFi network the phone and both boards can all join.
+\end{itemize}
+
+\notebox{Install \textbf{Termux} and \textbf{Termux:API} from the \emph{same}
+source (both from F-Droid). They must be signed by the same key or the
+notifications will silently not work. Do not mix F-Droid and Play Store builds.}
+
+\section{Part A --- Flash the two sensors (once)}
+
+\begin{enumerate}
+  \item In Arduino IDE: install \textbf{esp32 by Espressif} (Boards Manager) and
+        \textbf{NimBLE-Arduino} (Library Manager, version 2.x).
+  \item Select board \textbf{ESP32S3 Dev Module}. Set \textbf{USB CDC On Boot:
+        Enabled} (so Serial works over USB-C).
+  \item Edit \texttt{secrets.h} with your WiFi and your phone's IP address (you
+        get that IP in Part B):
+\begin{lstlisting}
+#define WIFI_SSID   "your-wifi"
+#define WIFI_PASS   "your-password"
+#define BOARD_ID    1              // 1 on the first board, 2 on the second
+#define SERVER_HOST "192.168.1.50" // your phone's LAN IP
+#define SERVER_PORT 8000
+\end{lstlisting}
+  \item Flash the first board with \texttt{BOARD\_ID 1}. Then change it to
+        \texttt{BOARD\_ID 2} and flash the second board.
+  \item Label the boards ``1'' and ``2''. Board 1 goes front-left, board 2 goes
+        back-right (or edit \texttt{BOARD\_LABELS} in \texttt{collector.py} to
+        match where you actually place them).
+\end{enumerate}
+
+The boards have no buttons and no commands --- once powered, they just sniff and
+POST. All control is on the phone.
+
+\section{Part B --- Set up the phone (Termux)}
+
+\begin{enumerate}
+  \item Install the packages and the Python web framework:
+\begin{lstlisting}
+pkg install python termux-api
+pip install flask
+\end{lstlisting}
+  \item Find the phone's LAN IP (the \texttt{inet} on \texttt{wlan0}) and put it
+        in \texttt{secrets.h} as \texttt{SERVER\_HOST} before flashing the boards:
+\begin{lstlisting}
+ifconfig
+\end{lstlisting}
+  \item Copy \texttt{collector.py} onto the phone (git clone the repo, or paste
+        the file).
+  \item Read the built-in help any time:
+\begin{lstlisting}
+python collector.py --help
+\end{lstlisting}
+\end{enumerate}
+
+\section{Part C --- Running an exam}
+
+\begin{enumerate}
+  \item Power both boards, one in each corner.
+  \item On the phone, keep it plugged in, and in Termux:
+\begin{lstlisting}
+termux-wake-lock      # keeps it running with the screen off
+python collector.py
+\end{lstlisting}
+  \item Watch the table start to populate (that confirms the boards are reaching
+        the phone).
+  \item With the room still \textbf{empty}, press \key{b} then Enter. It captures
+        the ambient devices for 10 minutes, then switches to live automatically.
+  \item Let the students in. The table now lists only the \emph{extra} devices,
+        with a corner and a type. When a device is actively \emph{used} (a traffic
+        episode) near a board, the phone buzzes. Glance at the zone and walk that
+        way; the \texttt{USED} column and the graph keep the moment if you look
+        later.
+\end{enumerate}
+
+\notebox{If Android keeps killing Termux during a long exam: keep the phone
+plugged in, run \texttt{termux-wake-lock}, and set Termux to
+\emph{Unrestricted} under Android's battery settings.}
+
+\section{Reading the live table}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Column} & \textbf{Meaning}\\
+\midrule
+MARK    & Blank, \texttt{W} (watch), or \texttt{D} (disregard). Set on the web page.\\
+MAC     & Device hardware address (often randomized, so it changes over time).\\
+RSSI    & Strongest signal seen, in dBm. Closer to 0 = nearer.\\
+ZONE    & \texttt{near front-left} / \texttt{near back-right} / \texttt{center}.\\
+TRAFFIC & Frames and bytes heard from this MAC in the last $\sim$2\,s (WiFi
+          only). A relative, undersampled ``how chatty'' proxy --- not real
+          throughput.\\
+USED    & \texttt{NOW} during a traffic episode, else ``used Xs ago'' for a few
+          minutes after one; \texttt{present} for a BLE device. Blank otherwise.\\
+TYPE    & \texttt{WiFi} or \texttt{BLE}, plus \texttt{rand} (randomized MAC) or
+          \texttt{apple}.\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+A device is placed in a corner only when \emph{both} boards hear it: the board
+with the stronger signal wins; if they are within a few dB it is called
+\texttt{center}. Watched (\texttt{W}) devices sort to the top and show red;
+disregarded (\texttt{D}) devices sort to the bottom and show green.
+
+\section{Episodes --- catching a brief moment of use}
+
+The point of the exam isn't a phone being \emph{on}, it's a phone being
+\emph{used}: picked up, a query sent, an answer read, put down --- a burst of
+tens of seconds (a query, or a photo of the question uploaded). The collector
+detects this as an \textbf{episode}: over the last 30\,s, a device's WiFi traffic
+must clear two gates at once ---
+\begin{itemize}
+  \item \textbf{volume}: total bytes above a floor (\texttt{EPISODE\_MIN\_BYTES}), and
+  \item \textbf{average frame size} above \texttt{EPISODE\_MIN\_FRAME}.
+\end{itemize}
+The frame-size gate is what separates real use from idle. An idle-but-connected
+phone still emits a trickle of \emph{tiny} keepalive/ACK frames; a real transfer
+sends \emph{large} data frames. Requiring a large average frame size means a
+device merely holding its WiFi connection alive never trips, while a genuine
+query does. 30\,s matches the length of a brief use.
+
+Each episode is \textbf{logged with a timestamp}, so this survives you leaving
+the room: step out to the bathroom for two or three minutes, and when you come
+back the device still shows ``used 90s ago'' and its graph shows a shaded hump at
+that time. When an episode starts on a device close to a board (or one you marked
+\texttt{W}), the phone buzzes.
+
+\textbf{BLE presence.} Watches and earbuds show up over Bluetooth and don't
+generate WiFi traffic --- for them the signal is simpler: a non-baseline BLE
+device is a violation \emph{just by being present}. Those rows show yellow, are
+labelled \texttt{present}, sort up, and buzz you. (Since students shouldn't have
+any such device, its mere presence is the alert.)
+
+\subsection*{Calibrating the floor}
+
+Do this once, in the real room, with a test phone that is \emph{not} in the
+baseline. Select it on the web page and read the \textbf{calib} line under the
+graph --- it shows the current 30\,s window sum and average frame size, next to
+the floor and frame thresholds, and says \texttt{EPISODE} or \texttt{below}.
+
+\begin{enumerate}
+  \item \textbf{Idle:} leave the phone connected but unused for a few minutes.
+        Note the highest window sum it reaches (keepalive chatter).
+  \item \textbf{Query:} do a real query (and a photo upload) a few times; note the
+        window sum.
+  \item Set \texttt{EPISODE\_MIN\_BYTES} \textbf{between} the idle peak and the
+        smallest query. The frame-size gate handles the rest.
+\end{enumerate}
+
+\notebox{\textbf{Calibrate from a worst-case desk} --- far from both boards. A
+phone far from a sensor is heard weaker and its frames are caught less often, so
+the \emph{same} query yields a smaller window sum than one done next to a board.
+Set the floor from the far position or a corner query can slip under it.}
+
+\section{Web dashboard and traffic graphs}
+
+The collector serves a small web page. On the phone open
+\texttt{http://localhost:8000/}; from your laptop on the same WiFi open
+\texttt{http://<phone-ip>:8000/}. Nothing is installed and no internet is needed.
+It gives you three things the console can't:
+
+\begin{itemize}
+  \item \textbf{Marking.} Each row has \texttt{W} and \texttt{D} buttons. Mark a
+        device \texttt{W} (watch) and it turns red and sorts to the top; mark it
+        \texttt{D} (disregard --- e.g.\ your own phone, or one you already
+        checked) and it turns green and sorts to the bottom. Unmarked devices sit
+        in the middle. Marks persist across restarts (\texttt{marks.json}).
+  \item \textbf{Traffic graphs with time windows.} Click a MAC to graph its
+        traffic. Buttons pick the window: \texttt{5m}, \texttt{15m}, \texttt{30m},
+        \texttt{60m}, \texttt{1h40m}. The short windows are for reading a single
+        episode; the long one is the whole picture.
+  \item \textbf{Episodes shaded.} Detected episodes appear as shaded humps on the
+        graph, so you can see exactly when a device was active.
+  \item \textbf{Calib readout.} Below the graph, a \texttt{calib} line shows the
+        selected device's current 30\,s window sum and average frame size against
+        the thresholds --- used to calibrate the floor (see above).
+\end{itemize}
+
+\notebox{\textbf{The long graph is only meaningful for \emph{stable} MACs}
+(no \texttt{rand} tag) --- a laptop, or a phone associated to an access point.
+A randomized MAC is discarded and replaced by the phone every few minutes, so
+its history only ever spans those few minutes. You are watching a short-lived
+identity, not a device across the whole exam.}
+
+\section{collector.py --- command reference}
+
+Type the letter in the Termux console, then press Enter.
+
+\begin{center}
+\begin{tabular}{@{}cl@{}}
+\toprule
+\textbf{Key} & \textbf{Action}\\
+\midrule
+\key{b} & Start baseline capture (10 min). Run in the \textbf{empty} room.\\
+\key{l} & Live detection.\\
+\key{i} & Idle (keep receiving, stop deciding).\\
+\key{s} & Save baseline to \texttt{baseline.json}.\\
+\key{c} & Clear baseline.\\
+\key{+} & Raise RSSI threshold by 5 dBm (fewer, closer devices).\\
+\key{-} & Lower RSSI threshold by 5 dBm (more, farther devices).\\
+\key{q} & Quit.\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Tunables (top of \texttt{collector.py})}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Constant} & \textbf{Meaning}\\
+\midrule
+\texttt{RSSI\_THRESHOLD} & Ignore devices weaker than this (default $-80$ dBm).\\
+\texttt{ALERT\_STRONGEST\_MIN} & Only buzz on episodes at least this close ($-70$ dBm), unless \texttt{W}.\\
+\texttt{ALERT\_COOLDOWN\_SECS} & Minimum gap between buzzes, per MAC (default 60).\\
+\texttt{BASELINE\_SECS} & Baseline capture length (default 600 = 10 min).\\
+\texttt{EXPIRE\_SECS} & Forget a device unseen this long (default 120).\\
+\texttt{BOARD\_LABELS} & Which corner each board sits in.\\
+\texttt{HISTORY\_SECS} & How much traffic history is kept (default 6000 = 1\,h\,40\,min).\\
+\texttt{EPISODE\_WINDOW\_SECS} & Detection window (default 30 s; a brief phone use).\\
+\texttt{EPISODE\_MIN\_BYTES} & Window traffic must clear this floor (bytes/30 s). Calibrate.\\
+\texttt{EPISODE\_MIN\_FRAME} & \dots and average frame size must clear this (default 250 B).\\
+\texttt{EPISODE\_RETAIN\_SECS} & Keep ``used Xs ago'' this long after an episode (default 300).\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Troubleshooting}
+
+\begin{center}
+\begin{tabular}{@{}p{5.3cm}p{9cm}@{}}
+\toprule
+\textbf{Symptom} & \textbf{Fix}\\
+\midrule
+Table stays empty & Boards can't reach the phone. Check
+\texttt{SERVER\_HOST} matches the phone's current IP, both boards and the phone
+are on the same WiFi, and the phone isn't on mobile data. On the board's Serial
+you should see \texttt{[POST] ... HTTP 200}.\\
+No notification buzz & Install the \textbf{Termux:API} app (not just the
+\texttt{termux-api} package) from F-Droid, same source as Termux.\\
+Termux dies mid-exam & Plug in the phone, run \texttt{termux-wake-lock}, set
+Termux battery to Unrestricted.\\
+Huge device count & Randomized MACs. Raise the threshold with \key{+}, and read
+the count as ``activity'', not ``number of phones''.\\
+Everything shows in one corner & The boards may be too close together or one is
+dead. Separate them; check both show \texttt{HTTP 200}.\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Honest limits}
+
+\begin{itemize}
+  \item \textbf{Off / airplane mode = invisible.} No radio, no detection.
+  \item \textbf{Randomized MACs inflate the count.} One phone $\to$ several rows.
+  \item \textbf{Zoning is coarse.} A corner, not a desk; bodies and reflections
+        blur the signal.
+  \item \textbf{2.4\,GHz only.} A phone using 5\,GHz WiFi only is not seen.
+\end{itemize}
+
+It is a proctoring aid and a deterrent. The only method that actually removes
+phones is collecting them physically at the door.
+
+\end{document}
