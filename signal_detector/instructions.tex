@@ -83,6 +83,13 @@ proof, and not as a substitute for collecting phones at the door.}
   \item An \textbf{Android phone} with \textbf{Termux} and \textbf{Termux:API}
         (both from F-Droid --- see the note below).
   \item A WiFi network the phone and both boards can all join.
+  \item \emph{Optional, but buy two --- one per board:} an \textbf{AD8317}
+        (or AD8318) log power detector module
+        with an SMA connector, plus a \textbf{600\,MHz--6\,GHz wideband whip}
+        antenna (\textbf{SMA male}, sold for SDR/5G or drones --- \emph{not} the
+        cheaper 700--2700\,MHz LTE type, which misses 5G; see §\ref{sec:rf}), and
+        three jumper wires. About US\$20 total. This adds the cellular arm of
+        §\ref{sec:rf}; without it everything else works as described.
 \end{itemize}
 
 \notebox{Install \textbf{Termux} and \textbf{Termux:API} from the \emph{same}
@@ -104,6 +111,8 @@ notifications will silently not work. Do not mix F-Droid and Play Store builds.}
 #define BOARD_ID    1              // 1 on the first board, 2 on the second
 #define SERVER_HOST "192.168.1.50" // your phone's LAN IP
 #define SERVER_PORT 8000
+#define RF_ENABLED  0              // 1 only if an AD8317 is wired (see the RF section)
+#define RF_ADC_PIN  4              // ADC1 pin (GPIO1..GPIO10) the detector's VOUT goes to
 \end{lstlisting}
   \item Flash the first board with \texttt{BOARD\_ID 1}. Then change it to
         \texttt{BOARD\_ID 2} and flash the second board.
@@ -237,6 +246,155 @@ phone far from a sensor is heard weaker and its frames are caught less often, so
 the \emph{same} query yields a smaller window sum than one done next to a board.
 Set the floor from the far position or a corner query can slip under it.}
 
+\section{The cellular arm (optional AD8317)}
+\label{sec:rf}
+
+Everything above is 2.4\,GHz. A phone with WiFi and Bluetooth switched off but
+mobile data on is invisible to it, because it transmits on entirely different
+bands (in Brazil roughly 700, 850, 900, 1800, 2100 and 2600\,MHz, plus 3.5\,GHz
+for 5G).
+The ESP32's radio cannot tune there. An \textbf{AD8317} log power detector can:
+it is a passive broadband RF voltmeter, the same principle as the commercial
+``phone detector'' wands. Listening is legal; only \emph{jamming} (transmitting
+to block phones) is not, and nothing here transmits.
+
+\subsection*{Which bands you actually cover}
+
+The detector chip itself spans 1\,MHz--10\,GHz, so coverage is decided entirely
+by the antenna. These are the \emph{uplink} halves --- the phone's own
+transmission, which is what has to be caught:
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Band} & \textbf{Uplink}\\
+\midrule
+B28 (700 APT)      & 703--748\,MHz\\
+B5 (850)           & 824--849\,MHz\\
+B8 (900)           & 880--915\,MHz\\
+B3 (1800)          & 1710--1785\,MHz\\
+B2 (1900)          & 1850--1910\,MHz\\
+B1 (2100)          & 1920--1980\,MHz\\
+B7 / B38 (2600)    & 2500--2620\,MHz\\
+n78 (5G)           & 3300--3800\,MHz\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Everything except n78 falls inside 703--2620\,MHz, so a 700--2700\,MHz LTE whip
+covers all of 2G, 3G and 4G with no filters. It does \emph{not} cover n78 --- and
+5G standalone on 3.5\,GHz is live in the Brazilian capitals, so a phone on
+\emph{5G puro} transmits there and nowhere else. A
+\textbf{600\,MHz--6\,GHz wideband whip} costs the same and closes that gap.
+
+\notebox{Sensitivity is not flat across such a span: the detector's intercept
+shifts a few dB with frequency and a wideband whip's gain ripples several more,
+perhaps 5--10\,dB end to end. Detection is relative to the baseline so this is
+harmless, but do not set \texttt{RF\_MARGIN\_DB} razor-thin, and read the dBm
+figure as a label, accurate only near the band you calibrated at.}
+
+\subsection*{How far it reaches}
+
+Range is set by the phone's \emph{power control}, not by the band. A phone with a
+weak tower signal shouts at $+23$\,dBm; one with a strong signal drops toward
+0\,dBm. At 1.8\,GHz in free space, against the AD8317's $\sim-55$\,dBm floor:
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Phone TX} & \textbf{At 10 m} & \textbf{At 3 m}\\
+\midrule
+$+23$\,dBm (poor coverage) & $\approx-35$\,dBm, caught & caught easily\\
+$0$\,dBm (strong coverage) & $\approx-58$\,dBm, \textbf{missed} & $\approx-47$\,dBm, caught\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+So the usable radius swings from a few metres to the whole room. Thick-walled
+classrooms usually have poor indoor coverage, which pushes phones toward full
+power and works in your favour --- but place the antenna among the students, not
+at the back wall.
+
+\subsection*{Acceptance test --- trust the room, not the datasheet}
+
+Wideband antennas are sold in housings identical to narrowband ones, and sellers
+mix up the specifications, so measure the thing you actually received. After
+wiring it and running a baseline:
+
+\begin{enumerate}
+  \item Take a test phone, switch \emph{off} its WiFi and Bluetooth, leave mobile
+        data on. Now the only thing it can transmit is cellular.
+  \item Stand beside the board and start a speed test or a large upload. The RF
+        row should go \texttt{BURST} within a couple of seconds.
+  \item Walk backwards a metre at a time, repeating, until it stops firing.
+\end{enumerate}
+
+That distance is your real detection radius --- on the band your carrier actually
+assigned, through the walls and bodies of that room. A few metres is normal and
+usable. If it only fires within arm's reach, you were sold a narrowband element
+and should return it.
+
+\subsection*{Wiring and enabling}
+
+\begin{enumerate}
+  \item Screw the whip onto the module's SMA connector.
+  \item Module \texttt{VOUT} $\rightarrow$ \texttt{RF\_ADC\_PIN} (default GPIO4),
+        \texttt{3V3} $\rightarrow$ \texttt{3V3}, \texttt{GND} $\rightarrow$ \texttt{GND}.
+        The output swings up to about 2\,V, inside the ADC's range, so no divider.
+  \item Set \texttt{RF\_ENABLED 1} in that board's \texttt{secrets.h} and reflash.
+        On boot the Serial prints \texttt{RF arm on GPIO4}.
+  \item Run a \emph{new} baseline (\key{b}) with the antenna in place.
+\end{enumerate}
+
+\notebox{\textbf{SMA, not RP-SMA.} Antennas sold for drones and FPV gear are
+usually \emph{reverse polarity}: same threads, but a socket where the centre pin
+should be. An RP-SMA antenna screws onto the detector and carries no signal
+whatsoever --- the RF row simply reads \texttt{quiet} forever, with nothing to
+suggest a fault. Before buying, confirm the antenna has a visible pin in the
+middle. Longer is better at the low end: take a 200\,mm whip over a 178\,mm one.}
+
+\notebox{\textbf{Fit both boards if you can.} A single detector does not cover a
+classroom --- it covers its own corner, because the reach against a
+low-power phone is only a few metres (see above). Two of them roughly double the
+watched area, and since the reach is short, a burst seen by one board and not the
+other already tells you which half of the room it came from. Each board keeps its
+own ambient level, its own burst decision and its own cooldown, and prints its own
+\texttt{RF} line; set \texttt{RF\_ENABLED 1} in both. One module still works, it
+simply watches less. Keep the whip away from the ESP32's own antenna: the board
+blanks its sampling while it POSTs, but a whip taped against the WROOM module will
+still read mostly the ESP32.}
+
+\subsection*{How it reads}
+
+The board samples the detector at about 5\,kHz --- fast enough that a
+$577\,\mu$s GSM slot or a 1\,ms LTE subframe spans several samples --- and every
+2\,s reports the interval's loudest sample, its quiet level, and how many samples
+sat clearly below the quiet level (the detector is \emph{inverting}: more RF
+power means \emph{lower} voltage). The collector converts to dBm and compares
+against the ambient level learned during the baseline. When a batch runs
+\texttt{RF\_MARGIN\_DB} above ambient with at least \texttt{RF\_MIN\_HITS} burst
+samples, it is a \textbf{burst}: the console and web page show
+\texttt{BURST +x.x dB} and you get one buzz (then a cooldown). Between bursts the
+row reads \texttt{quiet}, or ``last burst 40s ago'' for a while afterwards.
+
+If \texttt{RF\_MARGIN\_DB} at 3\,dB fires on nothing, raise it; if the room's own
+WiFi keeps setting it off, raise it and re-baseline with the classroom in its
+normal state. Absolute dBm values depend on \texttt{RF\_SLOPE\_MV\_DB} and
+\texttt{RF\_V\_REF\_MV} (nominal AD8317 figures) --- they are labels only; the
+detection is relative to the baseline and does not depend on them being right.
+
+\subsection*{What it does and doesn't buy you}
+
+It catches a phone \emph{actively transmitting} on any band in the table above:
+sending a message, loading a page, uploading a photo of the question. That is the
+cheating behaviour, and it is caught even with WiFi and Bluetooth off. But
+without a band filter it is deliberately unselective --- it reports any strong
+transmitter --- it names no device and no desk, its reach shrinks to a few metres
+against a phone with strong tower coverage, an idle phone still emits almost
+nothing between tracking updates, and airplane mode remains invisible. Read it as
+a second, independent yes/no next to the WiFi table: a burst the device list
+cannot explain is very likely a phone on mobile data.
+
 \section{Web dashboard and traffic graphs}
 
 The collector serves a small web page. On the phone open
@@ -306,6 +464,11 @@ Type the letter in the Termux console, then press Enter.
 \texttt{EPISODE\_MIN\_BYTES} & Window traffic must clear this floor (bytes/30 s). Calibrate.\\
 \texttt{EPISODE\_MIN\_FRAME} & \dots and average frame size must clear this (default 250 B).\\
 \texttt{EPISODE\_RETAIN\_SECS} & Keep ``used Xs ago'' this long after an episode (default 300).\\
+\texttt{RF\_MARGIN\_DB} & RF burst = this far above the empty-room ambient (3 dB). Calibrate.\\
+\texttt{RF\_MIN\_HITS} & \dots and at least this many burst samples per batch (default 3).\\
+\texttt{RF\_ALERT\_COOLDOWN} & Minimum gap between RF buzzes, per board (default 60).\\
+\texttt{RF\_SLOPE\_MV\_DB} & Detector slope, mV/dB (22 for AD8317, 25 for AD8318).\\
+\texttt{RF\_V\_REF\_MV} & Detector output at 0 dBm. Affects the dBm label only.\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -329,6 +492,13 @@ Huge device count & Randomized MACs. Raise the threshold with \key{+}, and read
 the count as ``activity'', not ``number of phones''.\\
 Everything shows in one corner & The boards may be too close together or one is
 dead. Separate them; check both show \texttt{HTTP 200}.\\
+RF row stays \texttt{quiet} even with a phone on a call beside it & First suspect
+the connector: an \textbf{RP-SMA} antenna mates mechanically and passes nothing
+(look for a centre pin). Otherwise check the Serial printed \texttt{RF arm on
+GPIO\emph{n}}, that \texttt{VOUT} goes to an \textbf{ADC1} pin (GPIO1--10), and
+that the baseline was run \emph{with} the antenna attached.\\
+No RF row at all & That board has \texttt{RF\_ENABLED 0}, or it is not reporting
+--- the row only appears while batches arrive.\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -340,7 +510,11 @@ dead. Separate them; check both show \texttt{HTTP 200}.\\
   \item \textbf{Randomized MACs inflate the count.} One phone $\to$ several rows.
   \item \textbf{Zoning is coarse.} A corner, not a desk; bodies and reflections
         blur the signal.
-  \item \textbf{2.4\,GHz only.} A phone using 5\,GHz WiFi only is not seen.
+  \item \textbf{2.4\,GHz only}, unless the AD8317 arm is fitted --- and that one
+        sees \emph{any} transmitter, never a named device, and only within a few
+        metres when the phone is transmitting at low power.
+  \item \textbf{An idle phone is nearly silent} on every band. Both arms catch
+        \emph{use}, not mere presence.
 \end{itemize}
 
 It is a proctoring aid and a deterrent. The only method that actually removes

@@ -48,6 +48,18 @@ EPISODE_MIN_FRAME     = 250        # ...and average frame size must clear this (
                                    # keepalives/ACKs (tiny frames) don't count. CALIBRATE.
 EPISODE_RETAIN_SECS   = 300        # keep flagging "used Xs ago" this long after an episode
 
+# RF arm (optional AD8317 on a board): broadband power detector, catches cellular
+# uplink bursts the 2.4 GHz radio cannot see. The board sends raw millivolts; the
+# AD8317 is INVERTING, so lower mV = more RF power.
+RF_SLOPE_MV_DB      = 22.0         # AD8317 nominal -22 mV/dB (AD8318: 25). Only affects labels.
+RF_V_REF_MV         = 500.0        # output at RF_P_REF_DBM. Nominal; calibrate if you want real dBm.
+RF_P_REF_DBM        = 0.0
+RF_MARGIN_DB        = 3.0          # burst = this far above the empty-room ambient peak. CALIBRATE.
+RF_MIN_HITS         = 3            # ...and at least this many sub-threshold samples in the batch
+RF_ALERT_COOLDOWN   = 60           # min gap between RF buzzes, per board
+RF_FLOOR_PCT        = 0.10         # ambient level = this quantile of the baseline's peak samples
+RF_STALE_SECS       = 15           # an RF reading older than this is not shown
+
 # ---------------- State ----------------
 lock       = threading.Lock()
 boards     = {}                    # board_id -> {mac: {"rssi","last","src","flags","pkts","bytes"}}
@@ -55,6 +67,10 @@ history    = {}                    # mac -> deque[(t, pkts, bytes)] over the las
 episodes   = {}                    # mac -> list[{"start","end","peak","peak_rssi"}] (closed)
 open_ep    = {}                    # mac -> {"start","peak","peak_rssi"} (currently open)
 baseline   = set()
+rf_state   = {}                    # board_id -> last RF batch (see rf_report)
+rf_floor   = {}                    # board_id -> ambient peak level in mV (learned in baseline mode)
+rf_cal     = {}                    # board_id -> list[mV] collected during baseline mode
+rf_alert   = {}                    # board_id -> last buzz time
 marks      = {}                    # mac -> "W" | "D"
 ep_alert   = {}                    # mac -> last buzz time
 mode       = "idle"                # idle | baseline | live
@@ -95,23 +111,83 @@ def report():
                 e["bytes"]  = byts
             if mode == "baseline":
                 baseline.add(mac)
+        rf = data.get("rf")
+        if isinstance(rf, dict):
+            rf_report(bid, rf, now)
     return "ok"
+
+
+# ---------------- RF arm ----------------
+def rf_dbm(mv):
+    """Detector output (mV) -> input power (dBm). Inverting: less mV = more power."""
+    return RF_P_REF_DBM + (RF_V_REF_MV - mv) / RF_SLOPE_MV_DB
+
+
+def rf_db_over(mv, floor_mv):
+    """How far a peak sits above the empty-room ambient peak, in dB."""
+    return (floor_mv - mv) / RF_SLOPE_MV_DB
+
+
+def rf_report(bid, rf, now):
+    """Ingest one board's RF batch. Call under `lock`. Returns True if it is a burst."""
+    peak_mv  = float(rf.get("min", RF_V_REF_MV))     # loudest sample = lowest voltage
+    quiet_mv = float(rf.get("max", peak_mv))
+    hits     = int(rf.get("hits", 0))
+    floor    = rf_floor.get(bid)
+    over     = rf_db_over(peak_mv, floor) if floor else 0.0
+    burst    = bool(floor and over >= RF_MARGIN_DB and hits >= RF_MIN_HITS)
+
+    st = rf_state.setdefault(bid, {})
+    st.update({"last": now, "peak_mv": peak_mv, "quiet_mv": quiet_mv,
+               "avg_mv": float(rf.get("avg", quiet_mv)), "n": int(rf.get("n", 0)),
+               "hits": hits, "peak_dbm": rf_dbm(peak_mv), "over": over, "burst": burst})
+    if burst:
+        st["last_burst"] = now
+
+    if mode == "baseline":
+        rf_cal.setdefault(bid, []).append(peak_mv)
+    elif burst:
+        last = rf_alert.get(bid)
+        if last is None or now - last >= RF_ALERT_COOLDOWN:
+            rf_alert[bid] = now
+            notify(f"cellular RF burst: {BOARD_LABELS.get(bid, bid)}, "
+                   f"+{over:.1f} dB over ambient ({hits} bursts/2s)")
+    return burst
+
+
+def rf_finish_baseline():
+    """Turn the baseline-mode samples into an ambient level per board. Call under `lock`."""
+    for bid, samples in rf_cal.items():
+        if not samples:
+            continue
+        s = sorted(samples)
+        rf_floor[bid] = s[int(len(s) * RF_FLOOR_PCT)]   # low tail = loudest ambient, minus outliers
+    rf_cal.clear()
 
 
 # ---------------- Persistence ----------------
 def save_baseline():
     with open(BASELINE_FILE, "w") as f:
-        json.dump(sorted(baseline), f)
-    print(f"Saved {len(baseline)} baseline MACs to {BASELINE_FILE}")
+        json.dump({"macs": sorted(baseline),
+                   "rf_floor": {str(k): v for k, v in rf_floor.items()}}, f)
+    rf = ", ".join(f"{BOARD_LABELS.get(int(b), b)} {v:.0f}mV" for b, v in rf_floor.items())
+    print(f"Saved {len(baseline)} baseline MACs to {BASELINE_FILE}"
+          + (f" (RF ambient: {rf})" if rf else ""))
 
 
 def load_baseline():
     try:
         with open(BASELINE_FILE) as f:
-            baseline.update(json.load(f))
-        print(f"Loaded {len(baseline)} baseline MACs.")
+            data = json.load(f)
     except FileNotFoundError:
-        pass
+        return
+    if isinstance(data, list):                    # pre-RF format: a bare list of MACs
+        baseline.update(data)
+    else:
+        baseline.update(data.get("macs", []))
+        rf_floor.update({int(k): float(v) for k, v in data.get("rf_floor", {}).items()})
+    print(f"Loaded {len(baseline)} baseline MACs"
+          + (f" and RF ambient for {len(rf_floor)} board(s)." if rf_floor else "."))
 
 
 def save_marks():
@@ -275,6 +351,21 @@ def _sortkey(d):
     return (g, flagged, ep["age"] if ep else 0.0, -d["rssi"])
 
 
+def rf_view(now):
+    """One row per board that has an RF detector attached. Call under `lock`."""
+    out = []
+    for bid, st in sorted(rf_state.items()):
+        if now - st["last"] > RF_STALE_SECS:
+            continue
+        last = st.get("last_burst")
+        out.append({"board": bid, "label": BOARD_LABELS.get(bid, str(bid)),
+                    "peak_dbm": round(st["peak_dbm"], 1), "over": round(st["over"], 1),
+                    "hits": st["hits"], "n": st["n"], "burst": st["burst"],
+                    "floor_mv": rf_floor.get(bid), "peak_mv": round(st["peak_mv"]),
+                    "since": round(now - last, 1) if last else None})
+    return out
+
+
 def merged_view(now):
     perb, meta, traf = {}, {}, {}
     for bid, table in boards.items():
@@ -316,6 +407,8 @@ def render_loop():
                 update_episodes(now)
                 last_hist = now
             view = merged_view(now) if mode == "live" else []
+            rfv  = rf_view(now)
+            rf_n = sum(len(v) for v in rf_cal.values())
             m, thr, base_n = mode, threshold, len(baseline)
 
         os.system("clear")
@@ -326,8 +419,21 @@ def render_loop():
         if m == "baseline":
             with lock:
                 left = int(baseline_until - now)
-            print(f"BASELINE capturing... {left:>4}s left. Leave the room empty.")
+            print(f"BASELINE capturing... {left:>4}s left. Leave the room empty."
+                  + (f"  (RF: {rf_n} samples)" if rf_n else ""))
         elif m == "live":
+            for r in rfv:
+                if r["floor_mv"] is None:
+                    s = f"{DIM}no ambient level yet — run a baseline{RST}"
+                elif r["burst"]:
+                    s = f"{RED}BURST  +{r['over']:.1f} dB over ambient, {r['hits']} hits/2s{RST}"
+                elif r["since"] is not None and r["since"] <= EPISODE_RETAIN_SECS:
+                    s = f"{YEL}quiet (last burst {human_age(r['since'])} ago){RST}"
+                else:
+                    s = f"{DIM}quiet{RST}"
+                print(f"  RF {r['label']:<12} peak {r['peak_dbm']:>6.1f} dBm  {s}")
+            if rfv:
+                print()
             print(f"active devices: {len(view)}   "
                   f"({RED}W{RST}=watch top  {GREEN}D{RST}=disregard bottom  "
                   f"{YEL}BLE{RST}=watch/earbud present  USED=phone used)\n")
@@ -394,7 +500,8 @@ INDEX_HTML = """<!doctype html><html><head><meta charset="utf-8">
   .muted { color:#888; font-size:13px; }
   .col-list { flex:1; min-width:360px; }
 </style></head><body>
-<header><b>signal_detector</b> &nbsp; <span id="status" class="muted"></span></header>
+<header><b>signal_detector</b> &nbsp; <span id="status" class="muted"></span>
+  <div id="rf" class="muted"></div></header>
 <div id="wrap">
   <div class="col-list">
     <table><thead><tr><th>mark</th><th>MAC</th><th>RSSI</th><th>ZONE</th><th>TRAFFIC/2s</th><th>USED</th><th>TYPE</th></tr></thead>
@@ -432,6 +539,12 @@ async function loadDevices(){
   let d = await (await fetch('/api/devices')).json();
   document.getElementById('status').textContent =
     'mode='+d.mode+'  threshold='+d.threshold+' dBm  devices='+d.devices.length;
+  document.getElementById('rf').innerHTML = (d.rf||[]).map(r =>
+    'RF '+r.label+': '+r.peak_dbm+' dBm — ' + (
+      r.floor_mv===null ? 'no ambient level yet, run a baseline'
+      : r.burst ? '<span class="used">BURST +'+r.over+' dB, '+r.hits+' hits/2s</span>'
+      : (r.since!==null ? '<span class="present">quiet, last burst '+ago(r.since)+' ago</span>' : 'quiet'))
+  ).join(' &nbsp;|&nbsp; ');
   let tb = document.getElementById('rows'); tb.innerHTML='';
   for(const x of d.devices){
     let ble = x.type==='BLE';
@@ -504,7 +617,7 @@ def api_devices():
                 "rand": bool(d["flags"] & 0x01), "apple": bool(d["flags"] & 0x02),
                 "pkts": d["pkts"], "bytes": d["bytes"], "mark": d["mark"],
                 "episode": d["episode"]} for d in view]
-        payload = {"mode": mode, "threshold": threshold, "devices": out}
+        payload = {"mode": mode, "threshold": threshold, "devices": out, "rf": rf_view(now)}
     return json.dumps(payload), 200, {"Content-Type": "application/json"}
 
 
@@ -544,9 +657,12 @@ def api_mark():
 # ---------------- Commands ----------------
 def _set_mode(new, quiet=False):
     global mode, baseline_until
+    if mode == "baseline" and new != "baseline":
+        rf_finish_baseline()
     mode = new
     if new == "baseline":
         baseline.clear()
+        rf_cal.clear()
         baseline_until = time.time() + BASELINE_SECS
     if not quiet:
         print(f">> mode = {new}")
@@ -561,7 +677,7 @@ def input_loop():
             elif c == "l": _set_mode("live")
             elif c == "i": _set_mode("idle")
             elif c == "s": save_baseline()
-            elif c == "c": baseline.clear(); print("baseline cleared.")
+            elif c == "c": baseline.clear(); rf_floor.clear(); print("baseline cleared.")
             elif c == "+": threshold += 5; print(f"threshold = {threshold}")
             elif c == "-": threshold -= 5; print(f"threshold = {threshold}")
             elif c == "q": running = False; break
@@ -591,6 +707,14 @@ EPISODE DETECTION (phones, over WiFi)
     keepalives/ACKs (tiny frames) don't count. Calibrate both in the room: select
     a test device and watch the web page's "calib" readout while it idles, then
     while it does one real query; set the floor in the gap between the two.
+
+RF ARM (optional AD8317 on a board, RF_ENABLED in secrets.h)
+    A broadband power detector covering the cellular bands the 2.4 GHz radio
+    cannot see. The board reports raw millivolts; the baseline learns the empty
+    room's ambient level, and a batch running RF_MARGIN_DB above it (with at
+    least RF_MIN_HITS burst samples) is flagged as a burst and buzzes you. It
+    says "something transmitted in the room", never which device. Re-run the
+    baseline after attaching or moving the antenna.
 
 BLE PRESENCE (watches / earbuds)
     Non-baseline BLE devices are flagged just by being present - a watch or

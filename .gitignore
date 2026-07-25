@@ -12,3 +12,10 @@ signal_detector/build/
 
 # Python
 signal_detector/__pycache__/
+signal_detector/tests/__pycache__/
+signal_detector/.pytest_cache/
+
+# LaTeX build artifacts
+signal_detector/instructions.aux
+signal_detector/instructions.log
+signal_detector/instructions.out

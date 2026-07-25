@@ -8,3 +8,9 @@
 #define BOARD_ID    1                  // set to 2 on the second board
 #define SERVER_HOST "192.168.1.50"     // your phone's LAN IP (Termux: ifconfig)
 #define SERVER_PORT 8000
+
+// Optional AD8317/AD8318 RF power detector (catches cellular uplink bursts).
+// 0 = no module attached (the board just doesn't report an "rf" field).
+#define RF_ENABLED  0
+#define RF_ADC_PIN  4                  // must be ADC1 on the S3 (GPIO1..GPIO10);
+                                       // ADC2 pins do not work while WiFi is on.

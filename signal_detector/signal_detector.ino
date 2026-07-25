@@ -10,14 +10,23 @@
  *  them at opposite corners; the collector compares each MAC's RSSI across the
  *  two to zone a device to a rough part of the room.
  *
+ *  Optional third arm (RF_ENABLED in secrets.h): an AD8317/AD8318 log power
+ *  detector on an ADC pin. That covers what the 2.4 GHz radio cannot see — a
+ *  phone transmitting on a cellular band. It is broadband (no filter), so the
+ *  board reports raw millivolts and the collector decides what is a burst.
+ *
  *  Honest limits: a phone that is off or in airplane mode emits nothing and is
  *  invisible. Randomized MACs make the raw count larger than the phone count.
- *  RSSI zoning is coarse (corner-of-the-room, not a desk).
+ *  RSSI zoning is coarse (corner-of-the-room, not a desk). The RF arm says
+ *  "something transmitted in the room", never which device.
  *
  *  Board setup (Arduino IDE):
  *    - "esp32 by Espressif" (v3.x), Board: "ESP32S3 Dev Module".
  *    - Library: "NimBLE-Arduino" (2.x).
  *    - USB CDC On Boot: Enabled.
+ *
+ *  RF wiring (only if RF_ENABLED):  antenna -> AD8317 SMA,
+ *  module VOUT -> RF_ADC_PIN, module 3V3 -> 3V3, GND -> GND.
  * ---------------------------------------------------------------------------*/
 
 #include <Arduino.h>
@@ -46,6 +55,46 @@ static QueueHandle_t          hitQueue;
 static std::map<uint64_t,Dev> devices;
 static uint32_t               lastPostMs = 0;
 static NimBLEScan*            pScan = nullptr;
+
+// ---------------- RF (cellular) arm ----------------
+#if RF_ENABLED
+static const uint32_t RF_SAMPLE_US = 200;    // ~5 kHz: a 577 us GSM slot spans ~3 samples
+static const uint16_t RF_BURST_MV  = 66;     // ~3 dB below the quiet level counts as a burst sample
+                                             // (AD8317 is inverting: more RF power = LOWER voltage)
+static volatile bool  rfBlank = false;       // true while WE transmit, so our own POST isn't a "burst"
+static portMUX_TYPE   rfMux   = portMUX_INITIALIZER_UNLOCKED;
+static uint16_t rfMin = 4095, rfMax = 0, rfRef = 0;   // rfRef = last interval's quiet level
+static uint32_t rfSum = 0, rfN = 0, rfHits = 0;
+
+static void rfTask(void*) {
+  uint32_t k = 0;
+  for (;;) {
+    if (!rfBlank) {
+      uint16_t mv = analogReadMilliVolts(RF_ADC_PIN);
+      portENTER_CRITICAL(&rfMux);
+      if (mv < rfMin) rfMin = mv;
+      if (mv > rfMax) rfMax = mv;
+      rfSum += mv;
+      rfN++;
+      if (rfRef && mv + RF_BURST_MV < rfRef) rfHits++;
+      portEXIT_CRITICAL(&rfMux);
+    }
+    delayMicroseconds(RF_SAMPLE_US);
+    if (++k % 500 == 0) vTaskDelay(1);       // feed the watchdog / let others run
+  }
+}
+
+// Take and reset the interval's stats. The interval's quiet level (max mV) becomes
+// the reference the next interval counts burst samples against.
+static void rfSnapshot(uint16_t& mn, uint16_t& mx, uint16_t& avg, uint32_t& n, uint32_t& hits) {
+  portENTER_CRITICAL(&rfMux);
+  mn = rfMin; mx = rfMax; n = rfN; hits = rfHits;
+  avg = rfN ? (uint16_t)(rfSum / rfN) : 0;
+  if (rfMax) rfRef = rfMax;
+  rfMin = 4095; rfMax = 0; rfSum = 0; rfN = 0; rfHits = 0;
+  portEXIT_CRITICAL(&rfMux);
+}
+#endif
 
 // ---------------- Helpers ----------------
 static uint64_t macFromStr(const std::string& s) {
@@ -150,16 +199,42 @@ static void postBatch() {
     kv.second.bytes   = 0;
     n++;
   }
-  body += "]}";
+  body += "]";
 
-  if (!connectWiFi()) { Serial.println("[NET] WiFi connect failed."); return; }
+#if RF_ENABLED
+  uint16_t mn, mx, avg; uint32_t rn, hits;
+  rfSnapshot(mn, mx, avg, rn, hits);
+  if (rn) {
+    body += ",\"rf\":{\"n\":" + String(rn) + ",\"min\":" + mn + ",\"max\":" + mx +
+            ",\"avg\":" + avg + ",\"hits\":" + String(hits) + "}";
+  }
+  rfBlank = true;                 // our own 2.4 GHz TX would swamp a broadband detector
+#endif
+  body += "}";
+
+  if (!connectWiFi()) {
+    Serial.println("[NET] WiFi connect failed.");
+#if RF_ENABLED
+    rfBlank = false;
+#endif
+    return;
+  }
   WiFiClient client;
   HTTPClient http;
   String url = String("http://") + SERVER_HOST + ":" + SERVER_PORT + "/report";
-  if (!http.begin(client, url)) { Serial.println("[NET] begin failed."); return; }
+  if (!http.begin(client, url)) {
+    Serial.println("[NET] begin failed.");
+#if RF_ENABLED
+    rfBlank = false;
+#endif
+    return;
+  }
   http.addHeader("Content-Type", "application/json");
   int code = http.POST(body);
   http.end();
+#if RF_ENABLED
+  rfBlank = false;
+#endif
   Serial.printf("[POST] board %d, %d devices, HTTP %d\n", (int)BOARD_ID, n, code);
 }
 
@@ -182,6 +257,12 @@ void setup() {
   pScan->setActiveScan(false);
   pScan->setInterval(45);
   pScan->setWindow(45);
+
+#if RF_ENABLED
+  analogSetPinAttenuation(RF_ADC_PIN, ADC_11db);   // full ~0..3.1 V span; AD8317 tops out near 2 V
+  xTaskCreatePinnedToCore(rfTask, "rf", 2048, nullptr, 1, nullptr, 1);
+  Serial.printf("RF arm on GPIO%d\n", (int)RF_ADC_PIN);
+#endif
 
   lastPostMs = millis();
 }
