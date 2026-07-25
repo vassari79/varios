@@ -49,9 +49,12 @@ EPISODE_MIN_FRAME     = 250        # ...and average frame size must clear this (
 EPISODE_RETAIN_SECS   = 300        # keep flagging "used Xs ago" this long after an episode
 
 # RF arm (optional AD8317 on a board): broadband power detector, catches cellular
-# uplink bursts the 2.4 GHz radio cannot see. The board sends raw millivolts; the
-# AD8317 is INVERTING, so lower mV = more RF power.
-RF_SLOPE_MV_DB      = 22.0         # AD8317 nominal -22 mV/dB (AD8318: 25). Only affects labels.
+# uplink bursts the 2.4 GHz radio cannot see. The board sends raw millivolts.
+RF_INVERTED         = True         # bare AD8317/AD8318: more RF power = LOWER mV. Set False if
+                                   # the module's output stage inverts the slope, and match
+                                   # RF_INVERTED in secrets.h. Getting this backwards is silent:
+                                   # the RF row just never leaves "quiet".
+RF_SLOPE_MV_DB      = 22.0         # AD8317 nominal 22 mV/dB (AD8318: 25). Only affects labels.
 RF_V_REF_MV         = 500.0        # output at RF_P_REF_DBM. Nominal; calibrate if you want real dBm.
 RF_P_REF_DBM        = 0.0
 RF_MARGIN_DB        = 3.0          # burst = this far above the empty-room ambient peak. CALIBRATE.
@@ -119,19 +122,27 @@ def report():
 
 # ---------------- RF arm ----------------
 def rf_dbm(mv):
-    """Detector output (mV) -> input power (dBm). Inverting: less mV = more power."""
-    return RF_P_REF_DBM + (RF_V_REF_MV - mv) / RF_SLOPE_MV_DB
+    """Detector output (mV) -> input power (dBm)."""
+    d = (RF_V_REF_MV - mv) if RF_INVERTED else (mv - RF_V_REF_MV)
+    return RF_P_REF_DBM + d / RF_SLOPE_MV_DB
 
 
 def rf_db_over(mv, floor_mv):
     """How far a peak sits above the empty-room ambient peak, in dB."""
-    return (floor_mv - mv) / RF_SLOPE_MV_DB
+    d = (floor_mv - mv) if RF_INVERTED else (mv - floor_mv)
+    return d / RF_SLOPE_MV_DB
+
+
+def rf_peak_quiet(rf):
+    """(loudest, quietest) mV of a batch, whichever way round the detector runs."""
+    lo = float(rf.get("min", RF_V_REF_MV))
+    hi = float(rf.get("max", lo))
+    return (lo, hi) if RF_INVERTED else (hi, lo)
 
 
 def rf_report(bid, rf, now):
     """Ingest one board's RF batch. Call under `lock`. Returns True if it is a burst."""
-    peak_mv  = float(rf.get("min", RF_V_REF_MV))     # loudest sample = lowest voltage
-    quiet_mv = float(rf.get("max", peak_mv))
+    peak_mv, quiet_mv = rf_peak_quiet(rf)
     hits     = int(rf.get("hits", 0))
     floor    = rf_floor.get(bid)
     over     = rf_db_over(peak_mv, floor) if floor else 0.0
@@ -161,7 +172,8 @@ def rf_finish_baseline():
         if not samples:
             continue
         s = sorted(samples)
-        rf_floor[bid] = s[int(len(s) * RF_FLOOR_PCT)]   # low tail = loudest ambient, minus outliers
+        i = int(len(s) * RF_FLOOR_PCT)                  # trim the tail holding the loudest outliers
+        rf_floor[bid] = s[i] if RF_INVERTED else s[len(s) - 1 - i]
     rf_cal.clear()
 
 

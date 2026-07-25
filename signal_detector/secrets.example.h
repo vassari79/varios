@@ -14,3 +14,6 @@
 #define RF_ENABLED  0
 #define RF_ADC_PIN  4                  // must be ADC1 on the S3 (GPIO1..GPIO10);
                                        // ADC2 pins do not work while WiFi is on.
+#define RF_INVERTED 1                  // 1 = bare AD8317/AD8318 (more RF power -> LOWER volts).
+                                       // Set 0 if your module has an output stage that
+                                       // inverts the slope. Check it: see the manual.

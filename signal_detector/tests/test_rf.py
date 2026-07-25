@@ -21,7 +21,15 @@ def clean(monkeypatch):
 
 
 def batch(peak_mv, hits=10, quiet_mv=800, n=5000):
-    return {"n": n, "min": peak_mv, "max": quiet_mv, "avg": quiet_mv - 5, "hits": hits}
+    """A batch whose loudest sample is peak_mv, for whichever polarity is configured."""
+    lo, hi = (peak_mv, quiet_mv) if c.RF_INVERTED else (quiet_mv, peak_mv)
+    return {"n": n, "min": lo, "max": hi, "avg": (lo + hi) // 2, "hits": hits}
+
+
+@pytest.fixture
+def positive_slope(monkeypatch):
+    """A module whose output stage inverts the AD8317's slope: more power = more volts."""
+    monkeypatch.setattr(c, "RF_INVERTED", False)
 
 
 # ---------------- conversion ----------------
@@ -70,6 +78,30 @@ def test_boards_alert_independently(clean):
     c.rf_report(1, batch(loud), now=1.0)
     c.rf_report(2, batch(loud), now=1.0)
     assert len(clean) == 2
+
+
+# ---------------- polarity ----------------
+def test_positive_slope_module_reads_the_other_way(positive_slope, clean):
+    assert c.rf_dbm(600) > c.rf_dbm(400)                       # more volts = more power now
+    assert c.rf_db_over(800 + 3 * c.RF_SLOPE_MV_DB, 800) == pytest.approx(3.0)
+    assert c.rf_peak_quiet({"min": 300, "max": 900}) == (900.0, 300.0)
+
+
+def test_burst_detection_works_on_a_positive_slope_module(positive_slope, clean):
+    c.rf_floor[1] = 800.0
+    quiet = 800 + (c.RF_MARGIN_DB - 1) * c.RF_SLOPE_MV_DB
+    loud  = 800 + (c.RF_MARGIN_DB + 1) * c.RF_SLOPE_MV_DB
+    assert c.rf_report(1, batch(quiet), now=1000.0) is False
+    assert c.rf_report(1, batch(loud), now=1000.0) is True
+    assert len(clean) == 1
+
+
+def test_baseline_floor_trims_the_loud_tail_either_way(positive_slope, clean):
+    c.mode = "baseline"
+    for mv in [700, 701, 702, 703, 704, 705, 706, 707, 708, 1200]:   # 1200 = outlier spike
+        c.rf_report(1, batch(mv), now=1.0)
+    c.rf_finish_baseline()
+    assert c.rf_floor[1] == 708.0                              # outlier excluded, ambient peak kept
 
 
 # ---------------- baseline ----------------

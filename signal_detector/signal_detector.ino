@@ -59,12 +59,23 @@ static NimBLEScan*            pScan = nullptr;
 // ---------------- RF (cellular) arm ----------------
 #if RF_ENABLED
 static const uint32_t RF_SAMPLE_US = 200;    // ~5 kHz: a 577 us GSM slot spans ~3 samples
-static const uint16_t RF_BURST_MV  = 66;     // ~3 dB below the quiet level counts as a burst sample
-                                             // (AD8317 is inverting: more RF power = LOWER voltage)
+static const uint16_t RF_BURST_MV  = 66;     // ~3 dB away from the quiet level = a burst sample
 static volatile bool  rfBlank = false;       // true while WE transmit, so our own POST isn't a "burst"
 static portMUX_TYPE   rfMux   = portMUX_INITIALIZER_UNLOCKED;
 static uint16_t rfMin = 4095, rfMax = 0, rfRef = 0;   // rfRef = last interval's quiet level
+static bool     rfHaveRef = false;
 static uint32_t rfSum = 0, rfN = 0, rfHits = 0;
+
+// A bare AD8317/AD8318 is inverting: more RF power means LOWER voltage, so the quiet
+// level is the interval's highest reading and a burst pushes below it. A module with an
+// inverting output stage does the reverse. RF_INVERTED (secrets.h) picks which.
+#if RF_INVERTED
+  #define RF_IS_BURST(mv, ref) ((mv) + RF_BURST_MV < (ref))
+  #define RF_QUIET_OF(mn, mx)  (mx)
+#else
+  #define RF_IS_BURST(mv, ref) ((mv) > (ref) + RF_BURST_MV)
+  #define RF_QUIET_OF(mn, mx)  (mn)
+#endif
 
 static void rfTask(void*) {
   uint32_t k = 0;
@@ -76,7 +87,7 @@ static void rfTask(void*) {
       if (mv > rfMax) rfMax = mv;
       rfSum += mv;
       rfN++;
-      if (rfRef && mv + RF_BURST_MV < rfRef) rfHits++;
+      if (rfHaveRef && RF_IS_BURST(mv, rfRef)) rfHits++;
       portEXIT_CRITICAL(&rfMux);
     }
     delayMicroseconds(RF_SAMPLE_US);
@@ -90,7 +101,7 @@ static void rfSnapshot(uint16_t& mn, uint16_t& mx, uint16_t& avg, uint32_t& n, u
   portENTER_CRITICAL(&rfMux);
   mn = rfMin; mx = rfMax; n = rfN; hits = rfHits;
   avg = rfN ? (uint16_t)(rfSum / rfN) : 0;
-  if (rfMax) rfRef = rfMax;
+  if (rfN) { rfRef = RF_QUIET_OF(rfMin, rfMax); rfHaveRef = true; }
   rfMin = 4095; rfMax = 0; rfSum = 0; rfN = 0; rfHits = 0;
   portEXIT_CRITICAL(&rfMux);
 }

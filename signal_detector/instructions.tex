@@ -338,11 +338,28 @@ and should return it.
 
 \begin{enumerate}
   \item Screw the whip onto the module's SMA connector.
-  \item Module \texttt{VOUT} $\rightarrow$ \texttt{RF\_ADC\_PIN} (default GPIO4),
-        \texttt{3V3} $\rightarrow$ \texttt{3V3}, \texttt{GND} $\rightarrow$ \texttt{GND}.
-        The output swings up to about 2\,V, inside the ADC's range, so no divider.
+  \item Power the module from \texttt{3V3} if it accepts it (the AD8317 runs on
+        3.0--5.5\,V), \texttt{GND} $\rightarrow$ \texttt{GND}.
+  \item \textbf{Before touching the GPIO}, measure \texttt{VOUT} against ground
+        with a multimeter, in a quiet room and again with a phone transmitting
+        beside it. A bare AD8317 stays around 0.4--2.1\,V, which is safe. If any
+        reading exceeds 3.0\,V --- possible on a module with an op-amp output
+        stage running off 5\,V --- power it from 3V3, or halve the output with two
+        equal resistors, before connecting. The S3's ADC pin is not 5\,V tolerant.
+  \item Note \emph{which way} the voltage moved when the phone transmitted; you
+        need it in the next step. Then \texttt{VOUT} $\rightarrow$
+        \texttt{RF\_ADC\_PIN} (default GPIO4).
   \item Set \texttt{RF\_ENABLED 1} in that board's \texttt{secrets.h} and reflash.
         On boot the Serial prints \texttt{RF arm on GPIO4}.
+  \item \textbf{Set the polarity.} A bare AD8317 is \emph{inverting}: more RF
+        power gives \emph{less} voltage. That is \texttt{RF\_INVERTED 1}, the
+        default, and it is what the datasheet says --- but some modules add an
+        output stage that flips it, and sellers' descriptions get this wrong
+        routinely. If your multimeter showed the voltage \emph{rising} when the
+        phone transmitted, set \texttt{RF\_INVERTED 0} in \texttt{secrets.h}
+        \emph{and} \texttt{RF\_INVERTED = False} in \texttt{collector.py}. Both
+        must agree. Backwards, the detector works perfectly and the RF row never
+        leaves \texttt{quiet}.
   \item Run a \emph{new} baseline (\key{b}) with the antenna in place.
 \end{enumerate}
 
@@ -492,11 +509,17 @@ Huge device count & Randomized MACs. Raise the threshold with \key{+}, and read
 the count as ``activity'', not ``number of phones''.\\
 Everything shows in one corner & The boards may be too close together or one is
 dead. Separate them; check both show \texttt{HTTP 200}.\\
-RF row stays \texttt{quiet} even with a phone on a call beside it & First suspect
-the connector: an \textbf{RP-SMA} antenna mates mechanically and passes nothing
-(look for a centre pin). Otherwise check the Serial printed \texttt{RF arm on
-GPIO\emph{n}}, that \texttt{VOUT} goes to an \textbf{ADC1} pin (GPIO1--10), and
-that the baseline was run \emph{with} the antenna attached.\\
+RF row stays \texttt{quiet} even with a phone on a call beside it & Three silent
+causes, in order of likelihood. (1) An \textbf{RP-SMA} antenna: mates
+mechanically, passes nothing --- look for a centre pin. (2) \textbf{Polarity
+backwards}: measure \texttt{VOUT} while a phone transmits and set
+\texttt{RF\_INVERTED} to match, in \emph{both} \texttt{secrets.h} and
+\texttt{collector.py}. (3) Wrong pin: \texttt{VOUT} must reach an \textbf{ADC1}
+pin (GPIO1--10). Also check the Serial printed \texttt{RF arm on GPIO\emph{n}} and
+that the baseline ran \emph{with} the antenna attached.\\
+RF row fires constantly, never goes quiet & Polarity is backwards \emph{and} the
+room is noisy, or the baseline was taken with the antenna disconnected. Re-run the
+baseline; if it persists, check \texttt{RF\_INVERTED} as above.\\
 No RF row at all & That board has \texttt{RF\_ENABLED 0}, or it is not reporting
 --- the row only appears while batches arrive.\\
 \bottomrule
