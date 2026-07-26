@@ -17,3 +17,14 @@
 #define RF_INVERTED 1                  // 1 = bare AD8317/AD8318 (more RF power -> LOWER volts).
                                        // Set 0 if your module has an output stage that
                                        // inverts the slope. Check it: see the manual.
+
+// Optional hunt mode: park this board on one MAC's WiFi channel and drive a buzzer
+// by proximity, so you can carry it and walk in on the phone. The target is chosen
+// from the collector's web page; the board picks it up in the reply to its next POST.
+// Only worth enabling on the board you intend to carry.
+#define HUNT_ENABLED    0
+#define HUNT_BUZZER_PIN 5              // passive piezo buzzer: + to this pin, - to GND
+#define HUNT_ZERO_PIN   0              // push-button to GND; GPIO0 is the BOOT button, so
+                                       // this works with no extra wiring. Tap = re-zero
+                                       // (one software attenuator step), hold 1 s = full
+                                       // scale back.

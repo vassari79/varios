@@ -65,6 +65,9 @@ Xs ago'' marker so you can step out for a few minutes and review what happened
 when you return. A web page (served by the phone) shows the same list, lets you
 mark a device \emph{watch} or \emph{disregard}, and graphs any device's traffic
 over several time windows (5\,min up to 1\,h\,40\,min), with episodes shaded.
+Optionally, one board can be fitted with a buzzer and \emph{carried}: you name a
+device on the web page and follow the clicking to the desk it is coming from
+(\S\,``Hunt mode'').
 
 \notebox{\textbf{Read this before trusting it.} A phone that is \emph{off} or in
 \emph{airplane mode} emits nothing and is invisible --- which is exactly what you
@@ -412,6 +415,111 @@ nothing between tracking updates, and airplane mode remains invisible. Read it a
 a second, independent yes/no next to the WiFi table: a burst the device list
 cannot explain is very likely a phone on mobile data.
 
+\section{Hunt mode --- walking in on a phone (optional)}
+
+The live table tells you that a phone is transmitting and roughly which half of
+the room it is in. It cannot tell you \emph{which desk}, and no amount of tuning
+will make it. The reason is worth understanding, because it decides how you use
+the system: the signal difference between two students depends on the
+\emph{ratio} of their distances to the board, and from across the room that ratio
+is almost 1.
+
+\begin{center}
+\begin{tabular}{@{}rl@{}}
+\toprule
+\textbf{Your distance to the phone} & \textbf{Signal difference from the next desk}\\
+\midrule
+3\,m (a board on the wall) & 0.2\,dB --- hopeless\\
+1\,m                       & 2.5\,dB --- lost in the noise\\
+0.5\,m                     & 6\,dB --- usable\\
+0.3\,m                     & 8--9\,dB --- decisive\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+(Two desks 0.7\,m apart. For comparison: the same signal swings 3--6\,dB on its
+own from reflections, and another 10--15\,dB depending on whether the phone is in
+a hand or a pocket. That is why the first two rows are hopeless --- the noise is
+bigger than the thing you are trying to measure.)
+
+So a fixed board cannot name a desk, and a bigger or more directional antenna
+will not change that: you are not short of signal, you are short of
+\emph{contrast}. What produces contrast is \textbf{being close}. Hunt mode
+therefore turns one board into something you carry: you name a device on the web
+page, that board locks onto it, and its buzzer clicks faster the stronger the
+signal gets. You walk the room and follow the clicks.
+
+\subsection*{Wiring and enabling}
+
+You need a small passive piezo buzzer and one board you are willing to carry.
+Connect the buzzer's \texttt{+} to \texttt{HUNT\_BUZZER\_PIN} (GPIO5 by default)
+and its \texttt{-} to \texttt{GND}. Nothing else needs wiring: the re-zero button
+is \texttt{GPIO0}, which is the \textbf{BOOT} button already on the board.
+
+In that board's \texttt{secrets.h}:
+
+\begin{lstlisting}
+#define HUNT_ENABLED    1
+#define HUNT_BUZZER_PIN 5
+#define HUNT_ZERO_PIN   0
+\end{lstlisting}
+
+Reflash \emph{only} that board. Leave the other at \texttt{HUNT\_ENABLED 0} so it
+keeps watching the whole room while you are walking around with the first one.
+
+\subsection*{Using it}
+
+\begin{enumerate}
+  \item \textbf{Wait for an episode.} The \texttt{USED} column has to read
+        \texttt{NOW}. Hunt mode follows a signal, so there must be a signal: a
+        phone that transmitted a minute ago and went quiet cannot be found.
+  \item \textbf{Press \texttt{H}} on that device's row in the web page. The
+        header turns orange and names the target and its channel.
+  \item \textbf{Pick up the hunting board and walk.} It starts clicking. Slow
+        clicks mean far, fast clicks mean close. Move along the aisle and listen
+        for the rate going up.
+  \item \textbf{When the clicks run together into a buzz, tap the BOOT button.}
+        The board goes quiet again and re-scales: what was ``loud'' is now
+        ``silent'', so you get the full range of clicking back for the last few
+        metres. Do this as often as you need --- each tap is one more step of
+        magnification.
+  \item \textbf{Close in.} In the last half-metre, hold the board near one desk
+        at a time. The difference between neighbours is now 6--9\,dB, which is
+        several clicks per second --- unmistakable.
+  \item \textbf{Press \texttt{H} again} (or \key{h} in the console) to stop. If
+        you forget, it stops by itself after 10 minutes.
+\end{enumerate}
+
+If you overshoot the scale and everything sounds silent, \textbf{hold} the BOOT
+button for one second: that puts the sensitivity back to full.
+
+\notebox{\textbf{Hunt during the episode, not after it.} This is the one rule
+that decides whether hunt mode works. While a student is actually using the
+phone it transmits hundreds of times a second and the board tracks it smoothly.
+The moment they put it down, the phone drops to one brief transmission every
+15--60 seconds and the clicking becomes useless. Start walking when the row says
+\texttt{NOW}.}
+
+\subsection*{What it can and cannot follow}
+
+\begin{itemize}
+  \item \textbf{WiFi only.} The board locks onto a MAC address on one channel.
+        A phone using \emph{mobile data} has no MAC address to lock onto --- the
+        cellular arm can tell you it is transmitting, but cannot be hunted.
+        Bluetooth-only devices (a watch, earbuds) have no WiFi channel either,
+        and their rows have no \texttt{H} button.
+  \item \textbf{The hunting board stops watching the room.} To hear the target
+        properly it parks on that one channel instead of sweeping all thirteen
+        --- while sweeping it would only be listening to the target 8\,\% of the
+        time, which is far too little to walk with. So the second board is doing
+        the watching while you hunt, which is why only one board should have
+        \texttt{HUNT\_ENABLED 1}.
+  \item \textbf{A randomized MAC is still the same MAC for the whole hunt.} Once
+        a phone is connected to an access point it keeps one address for that
+        session, so the lock holds. Rotation only affects phones that are
+        \emph{not} connected to anything.
+\end{itemize}
+
 \section{Web dashboard and traffic graphs}
 
 The collector serves a small web page. On the phone open
@@ -434,6 +542,9 @@ It gives you three things the console can't:
   \item \textbf{Calib readout.} Below the graph, a \texttt{calib} line shows the
         selected device's current 30\,s window sum and average frame size against
         the thresholds --- used to calibrate the floor (see above).
+  \item \textbf{Hunt.} WiFi rows also carry an \texttt{H} button, which sends the
+        carried board after that device --- see \S\,``Hunt mode''. Bluetooth rows
+        have no \texttt{H}, because there is no WiFi channel to park on.
 \end{itemize}
 
 \notebox{\textbf{The long graph is only meaningful for \emph{stable} MACs}
@@ -456,6 +567,7 @@ Type the letter in the Termux console, then press Enter.
 \key{i} & Idle (keep receiving, stop deciding).\\
 \key{s} & Save baseline to \texttt{baseline.json}.\\
 \key{c} & Clear baseline.\\
+\key{h} & Stop the current hunt (same as pressing \texttt{H} again on the web page).\\
 \key{+} & Raise RSSI threshold by 5 dBm (fewer, closer devices).\\
 \key{-} & Lower RSSI threshold by 5 dBm (more, farther devices).\\
 \key{q} & Quit.\\
@@ -486,6 +598,7 @@ Type the letter in the Termux console, then press Enter.
 \texttt{RF\_ALERT\_COOLDOWN} & Minimum gap between RF buzzes, per board (default 60).\\
 \texttt{RF\_SLOPE\_MV\_DB} & Detector slope, mV/dB (22 for AD8317, 25 for AD8318).\\
 \texttt{RF\_V\_REF\_MV} & Detector output at 0 dBm. Affects the dBm label only.\\
+\texttt{HUNT\_MAX\_SECS} & A forgotten hunt stops itself after this (default 600 = 10 min).\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -501,10 +614,16 @@ Table stays empty & Boards can't reach the phone. Check
 \texttt{SERVER\_HOST} matches the phone's current IP, both boards and the phone
 are on the same WiFi, and the phone isn't on mobile data. On the board's Serial
 you should see \texttt{[POST] ... HTTP 200}.\\
-No notification buzz & Install the \textbf{Termux:API} app (not just the
-\texttt{termux-api} package) from F-Droid, same source as Termux.\\
+No notification buzz & First, test the bridge: \texttt{termux-battery-status}
+should print JSON. If it hangs, Termux and the \textbf{Termux:API} app came from
+different sources (e.g.\ one from Play Store, one from F-Droid) --- they are then
+signed differently and cannot talk; reinstall \emph{both} from F-Droid. If the
+JSON prints but there is still no buzz, it is being suppressed: alerts fire
+\texttt{termux-vibrate -f} to punch through silent mode and Do Not Disturb, but
+\textbf{Battery Saver} blocks even that --- keep the phone plugged in. Confirm the
+motor works at all with \texttt{termux-vibrate -d 1000 -f}.\\
 Termux dies mid-exam & Plug in the phone, run \texttt{termux-wake-lock}, set
-Termux battery to Unrestricted.\\
+Termux battery to Unrestricted. A low battery also silently disables vibration.\\
 Huge device count & Randomized MACs. Raise the threshold with \key{+}, and read
 the count as ``activity'', not ``number of phones''.\\
 Everything shows in one corner & The boards may be too close together or one is
@@ -522,6 +641,18 @@ room is noisy, or the baseline was taken with the antenna disconnected. Re-run t
 baseline; if it persists, check \texttt{RF\_INVERTED} as above.\\
 No RF row at all & That board has \texttt{RF\_ENABLED 0}, or it is not reporting
 --- the row only appears while batches arrive.\\
+No \texttt{H} button on a row & That device is Bluetooth-only, so it has no WiFi
+channel to park a hunt on. Only WiFi rows can be hunted.\\
+Pressed \texttt{H}, the buzzer never clicks & Most likely the phone stopped
+transmitting --- hunt only works while the \texttt{USED} column says
+\texttt{NOW}. Otherwise: that board has \texttt{HUNT\_ENABLED 0}, or the header
+says the device has not been heard on WiFi yet (it will start once it is), or the
+sensitivity is turned down from earlier taps --- hold BOOT for a second.\\
+Buzzer clicks flat out everywhere & The scale is saturated. Tap BOOT to re-zero;
+each tap gives you the range back. Hold BOOT to undo all of it.\\
+Devices vanish from the table while hunting & Expected --- the hunting board
+parks on one channel and stops sweeping. The other board keeps watching. Stop the
+hunt with \key{h} and it goes back to normal within a few seconds.\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -532,7 +663,8 @@ No RF row at all & That board has \texttt{RF\_ENABLED 0}, or it is not reporting
   \item \textbf{Off / airplane mode = invisible.} No radio, no detection.
   \item \textbf{Randomized MACs inflate the count.} One phone $\to$ several rows.
   \item \textbf{Zoning is coarse.} A corner, not a desk; bodies and reflections
-        blur the signal.
+        blur the signal. Hunt mode is how you get closer than that, and it works
+        by making \emph{you} walk --- no fixed setup will name a desk.
   \item \textbf{2.4\,GHz only}, unless the AD8317 arm is fitted --- and that one
         sees \emph{any} transmitter, never a named device, and only within a few
         metres when the phone is transmitting at low power.

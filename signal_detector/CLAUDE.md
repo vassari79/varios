@@ -20,6 +20,11 @@ the collector; the boards are deliberately dumb sensors.
 ## Conventions
 - **Firmware stays dumb.** New sensing arms report raw measurements; thresholds and
   state machines go in `collector.py` so they can be retuned without reflashing.
+  One deliberate exception: **hunt mode** (`HUNT_ENABLED`) keeps its peak-hold,
+  buzzer mapping and re-zero button on the board, because homing in on a signal is
+  a hand-eye loop that needs feedback well under a second — a 2 s POST round-trip
+  cannot close it. The collector still owns *what* to hunt; the board owns only the
+  10 Hz loop. Any future arm wanting board-side logic must clear the same bar.
 - Anything optional goes behind a `#define` in `secrets.h` (default off) so the
   sketch compiles both ways — check both before committing:
   `arduino-cli compile --fqbn esp32:esp32:esp32s3 .`

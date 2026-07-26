@@ -15,7 +15,8 @@ Setup in Termux:
 (termux-notification also needs the Termux:API app installed from F-Droid.)
 
 Keys (type the letter + Enter in the console):
-    b baseline (empty room) | l live | i idle | s save baseline | c clear | +/- threshold | q quit
+    b baseline (empty room) | l live | i idle | s save baseline | c clear
+    h stop hunt | +/- threshold | q quit
 """
 
 import json
@@ -36,6 +37,10 @@ EXPIRE_SECS         = 120          # forget a MAC unseen this long
 RSSI_THRESHOLD      = -80          # ignore devices weaker than this (dBm)
 ALERT_STRONGEST_MIN = -70          # only buzz on episodes at least this close (or W-marked)
 ALERT_COOLDOWN_SECS = 60           # min gap between buzzes, per MAC
+NOTIFY_VIBRATE_MS   = 800          # every alert force-vibrates this long. termux-notification
+                                   # respects silent mode / Do Not Disturb (many phones then
+                                   # swallow its buzz); `termux-vibrate -f` ignores them. Battery
+                                   # saver still blocks it — keep the phone plugged in.
 BOARD_LABELS        = {1: "front-left", 2: "back-right"}   # where each board sits
 ZONE_MARGIN_DB      = 6            # RSSI gap below which a device is "center"
 HISTORY_SECS        = 6000         # keep 1 h 40 min of per-MAC traffic history
@@ -63,6 +68,12 @@ RF_ALERT_COOLDOWN   = 60           # min gap between RF buzzes, per board
 RF_FLOOR_PCT        = 0.10         # ambient level = this quantile of the baseline's peak samples
 RF_STALE_SECS       = 15           # an RF reading older than this is not shown
 
+# Hunt mode: name one MAC and the carried board (HUNT_ENABLED in its secrets.h) parks on
+# that MAC's channel and clicks a buzzer by proximity. The board polls the target in the
+# reply to every POST; all this side does is choose it. A hunting board stops sweeping the
+# other channels, so it is half-blind to the rest of the room — hence the auto-stop.
+HUNT_MAX_SECS       = 600          # give up on a hunt nobody stopped, and go back to sweeping
+
 # ---------------- State ----------------
 lock       = threading.Lock()
 boards     = {}                    # board_id -> {mac: {"rssi","last","src","flags","pkts","bytes"}}
@@ -75,6 +86,7 @@ rf_floor   = {}                    # board_id -> ambient peak level in mV (learn
 rf_cal     = {}                    # board_id -> list[mV] collected during baseline mode
 rf_alert   = {}                    # board_id -> last buzz time
 marks      = {}                    # mac -> "W" | "D"
+hunt       = {"mac": None, "ch": None, "since": 0.0}   # what the carried board chases
 ep_alert   = {}                    # mac -> last buzz time
 mode       = "idle"                # idle | baseline | live
 baseline_until = 0.0
@@ -101,10 +113,13 @@ def report():
             rssi = int(d.get("r", -127))
             pkts = int(d.get("p", 0))
             byts = int(d.get("b", 0))
+            ch   = d.get("c")                  # WiFi channel; absent for BLE-only devices
+            ch   = int(ch) if ch else None
             e = table.get(mac)
             if e is None:
                 table[mac] = {"rssi": rssi, "last": now, "src": int(d.get("s", 0)),
-                              "flags": int(d.get("f", 0)), "pkts": pkts, "bytes": byts}
+                              "flags": int(d.get("f", 0)), "pkts": pkts, "bytes": byts,
+                              "ch": ch}
             else:
                 if rssi > e["rssi"]:
                     e["rssi"] = rssi
@@ -112,12 +127,54 @@ def report():
                 e["flags"] |= int(d.get("f", 0))
                 e["pkts"]   = pkts
                 e["bytes"]  = byts
+                if ch:
+                    e["ch"] = ch
             if mode == "baseline":
                 baseline.add(mac)
         rf = data.get("rf")
         if isinstance(rf, dict):
             rf_report(bid, rf, now)
-    return "ok"
+        body = hunt_reply(now)
+    return body, 200, {"Content-Type": "application/json"}
+
+
+# ---------------- Hunt arm ----------------
+def channel_of(mac):
+    """Most recent WiFi channel this MAC was heard on, or None. Call under `lock`."""
+    seen, ch = 0.0, None
+    for table in boards.values():
+        e = table.get(mac)
+        if e and e.get("ch") and e["last"] >= seen:
+            seen, ch = e["last"], e["ch"]
+    return ch
+
+
+def hunt_reply(now):
+    """The board reads its target off every POST reply. Call under `lock`."""
+    hunt_expire(now)
+    if hunt["mac"] is None:
+        return '{"hunt":null}'
+    if not hunt["ch"]:
+        hunt["ch"] = channel_of(hunt["mac"])   # not heard on WiFi yet when the hunt was aimed
+    if not hunt["ch"]:
+        return '{"hunt":null}'
+    return '{"hunt":{"m":"%s","c":%d}}' % (hunt["mac"], hunt["ch"])
+
+
+def hunt_expire(now):
+    """Stop a hunt nobody stopped, so the board goes back to sweeping. Call under `lock`."""
+    if hunt["mac"] is not None and now - hunt["since"] > HUNT_MAX_SECS:
+        set_hunt(None)
+
+
+def set_hunt(mac, now=None):
+    """Aim (or clear) the hunt. Re-resolves the channel, which may not be known yet.
+    Call under `lock`."""
+    if not mac:
+        hunt.update({"mac": None, "ch": None, "since": 0.0})
+    else:
+        hunt.update({"mac": mac, "ch": channel_of(mac), "since": now or time.time()})
+    return dict(hunt)
 
 
 # ---------------- RF arm ----------------
@@ -217,11 +274,15 @@ def load_marks():
 
 # ---------------- Alerts ----------------
 def notify(text):
+    # Buzz first, with -f so it fires through silent mode / Do Not Disturb, then post the
+    # readable alert. The notification alone is unreliable: the phone can suppress its buzz.
+    _termux(["termux-vibrate", "-d", str(NOTIFY_VIBRATE_MS), "-f"])
+    _termux(["termux-notification", "--title", "Exam alert", "--content", text])
+
+
+def _termux(cmd):
     try:
-        subprocess.run(
-            ["termux-notification", "--title", "Exam alert", "--content", text],
-            timeout=8, check=False,
-        )
+        subprocess.run(cmd, timeout=8, check=False)
     except FileNotFoundError:
         pass   # termux-api not installed; the live console still shows everything
 
@@ -397,7 +458,8 @@ def merged_view(now):
         src, flags = meta[mac]
         pk, by = traf[mac]
         out.append({"mac": mac, "rssi": best, "zone": zone_of(pb), "src": src, "flags": flags,
-                    "pkts": pk, "bytes": by, "mark": mark, "episode": episode_info(mac, now)})
+                    "pkts": pk, "bytes": by, "mark": mark, "ch": channel_of(mac),
+                    "episode": episode_info(mac, now)})
     out.sort(key=_sortkey)
     return out
 
@@ -418,15 +480,23 @@ def render_loop():
                 sample_history(now)
                 update_episodes(now)
                 last_hist = now
+            hunt_expire(now)
             view = merged_view(now) if mode == "live" else []
             rfv  = rf_view(now)
             rf_n = sum(len(v) for v in rf_cal.values())
+            hv   = dict(hunt)
             m, thr, base_n = mode, threshold, len(baseline)
 
         os.system("clear")
         print(f"=== signal_detector collector ===  mode={m}  threshold={thr} dBm  baseline={base_n} MACs")
         web = f"web DOWN -> {web_error}" if web_error else f"web http://<phone-ip>:{PORT}/"
-        print(f"keys: b baseline | l live | i idle | s save | c clear | +/- threshold | q quit    {web}\n")
+        print(f"keys: b baseline | l live | i idle | s save | c clear | h stop hunt | "
+              f"+/- threshold | q quit    {web}")
+        if hv["mac"]:
+            where = f"channel {hv['ch']}" if hv["ch"] else "no WiFi channel known yet"
+            print(f"{YEL}HUNT {hv['mac']} ({where}) — carry the board, follow the clicks. "
+                  f"'h' stops it, auto-stop in {human_age(HUNT_MAX_SECS - (now - hv['since']))}.{RST}")
+        print()
 
         if m == "baseline":
             with lock:
@@ -449,7 +519,10 @@ def render_loop():
             print(f"active devices: {len(view)}   "
                   f"({RED}W{RST}=watch top  {GREEN}D{RST}=disregard bottom  "
                   f"{YEL}BLE{RST}=watch/earbud present  USED=phone used)\n")
-            print(f"  {'M':1} {'MAC':<17}  {'RSSI':>5}  {'ZONE':<16}  {'TRAFFIC/2s':>13}  {'USED':>10}  TYPE")
+            # CH is a diagnostic, not decoration: if every device shares one channel the
+            # boards are not hopping (an associated station is pinned to its AP's channel).
+            print(f"  {'M':1} {'MAC':<17}  {'RSSI':>5} {'CH':>3}  {'ZONE':<16}  "
+                  f"{'TRAFFIC/2s':>13}  {'USED':>10}  TYPE")
             for d in view:
                 ble = d["src"] == 1
                 tags = ("BLE" if ble else "WiFi")
@@ -463,7 +536,8 @@ def render_loop():
                     used = "NOW" if ep and ep["state"] == "active" else (human_age(ep["age"]) if ep else "")
                 mk = d["mark"]
                 mcol = f"{RED}W{RST}" if mk == "W" else (f"{GREEN}D{RST}" if mk == "D" else " ")
-                line = (f"  {mcol} {d['mac']:<17}  {d['rssi']:>4}d  {d['zone']:<16}  "
+                ch = str(d["ch"]) if d["ch"] else "-"
+                line = (f"  {mcol} {d['mac']:<17}  {d['rssi']:>4}d {ch:>3}  {d['zone']:<16}  "
                         f"{traffic:>13}  {used:>10}  {tags}")
                 if   mk == "W": print(f"{RED}{line}{RST}")
                 elif mk == "D": print(f"{DIM}{line}{RST}")
@@ -503,6 +577,8 @@ INDEX_HTML = """<!doctype html><html><head><meta charset="utf-8">
   .mk:hover { border-color:#888; }
   .mk.onW { background:#c0392b; color:#fff; border-color:#c0392b; }
   .mk.onD { background:#27ae60; color:#fff; border-color:#27ae60; }
+  .mk.onH { background:#e67e22; color:#fff; border-color:#e67e22; }
+  #hunt { color:#f39c12; }
   #panel { flex:1; min-width:320px; }
   canvas { width:100%; max-width:640px; height:220px; background:#181818; border:1px solid #333; border-radius:6px; }
   #ranges { margin:4px 0 6px; }
@@ -513,10 +589,11 @@ INDEX_HTML = """<!doctype html><html><head><meta charset="utf-8">
   .col-list { flex:1; min-width:360px; }
 </style></head><body>
 <header><b>signal_detector</b> &nbsp; <span id="status" class="muted"></span>
-  <div id="rf" class="muted"></div></header>
+  <div id="rf" class="muted"></div>
+  <div id="hunt" class="muted"></div></header>
 <div id="wrap">
   <div class="col-list">
-    <table><thead><tr><th>mark</th><th>MAC</th><th>RSSI</th><th>ZONE</th><th>TRAFFIC/2s</th><th>USED</th><th>TYPE</th></tr></thead>
+    <table><thead><tr><th>mark</th><th>MAC</th><th>RSSI</th><th>CH</th><th>ZONE</th><th>TRAFFIC/2s</th><th>USED</th><th>TYPE</th></tr></thead>
     <tbody id="rows"></tbody></table>
   </div>
   <div id="panel">
@@ -534,7 +611,7 @@ INDEX_HTML = """<!doctype html><html><head><meta charset="utf-8">
   </div>
 </div>
 <script>
-let sel = null, span = 900, lastHist = null;
+let sel = null, span = 900, lastHist = null, huntMac = null;
 function human(n){ let u=['','K','M','G'],i=0; while(n>=1024&&i<3){n/=1024;i++;} return (i?n.toFixed(1):n.toFixed(0))+u[i]; }
 function ago(s){ s=Math.round(s); if(s<60)return s+'s'; if(s<3600)return Math.round(s/60)+'m'; return Math.round(s/3600)+'h'; }
 function spanLabel(s){ if(s<3600) return (s/60)+'m'; let h=Math.floor(s/3600), m=Math.round((s%3600)/60); return h+'h'+(m?m+'m':''); }
@@ -547,6 +624,13 @@ function mkbtn(x, letter, cls){
   let on = (x.mark===letter) ? (' on'+letter) : '';
   return '<span class="mk'+on+'" onclick="setMark(\\''+x.mac+'\\',\\''+(x.mark===letter?'-':letter)+'\\',event)">'+cls+'</span>';
 }
+async function setHunt(mac, ev){ ev.stopPropagation(); await fetch('/api/hunt?mac='+encodeURIComponent(mac)); loadDevices(); }
+function huntbtn(x){
+  if(x.type!=='WiFi') return '';                 // BLE has no channel to park a hunt on
+  let on = (x.mac===huntMac) ? ' onH' : '';
+  return '<span class="mk'+on+'" title="carry the hunting board and walk in on this MAC"'
+       + ' onclick="setHunt(\\''+(x.mac===huntMac?'':x.mac)+'\\',event)">H</span>';
+}
 async function loadDevices(){
   let d = await (await fetch('/api/devices')).json();
   document.getElementById('status').textContent =
@@ -557,6 +641,12 @@ async function loadDevices(){
       : r.burst ? '<span class="used">BURST +'+r.over+' dB, '+r.hits+' hits/2s</span>'
       : (r.since!==null ? '<span class="present">quiet, last burst '+ago(r.since)+' ago</span>' : 'quiet'))
   ).join(' &nbsp;|&nbsp; ');
+  let h = d.hunt || {}; huntMac = h.mac;
+  document.getElementById('hunt').innerHTML = !h.mac ? ''
+    : ('HUNT <b>'+h.mac+'</b> — '
+       + (h.ch ? 'channel '+h.ch+', carry the board and follow the clicks'
+               : 'not heard on WiFi yet, the board keeps sweeping')
+       + ' &nbsp; (auto-stop in '+ago(h.left)+')');
   let tb = document.getElementById('rows'); tb.innerHTML='';
   for(const x of d.devices){
     let ble = x.type==='BLE';
@@ -567,8 +657,8 @@ async function loadDevices(){
     let used = ble ? '<span class="present">present</span>'
              : (x.episode ? (x.episode.state==='active' ? '<span class="used">NOW</span>' : 'used '+ago(x.episode.age)+' ago') : '');
     tr.innerHTML =
-      '<td>'+mkbtn(x,'W','W')+mkbtn(x,'D','D')+'</td>'+
-      '<td>'+x.mac+'</td><td>'+x.rssi+'d</td><td>'+x.zone+'</td>'+
+      '<td>'+mkbtn(x,'W','W')+mkbtn(x,'D','D')+huntbtn(x)+'</td>'+
+      '<td>'+x.mac+'</td><td>'+x.rssi+'d</td><td>'+(x.ch||'-')+'</td><td>'+x.zone+'</td>'+
       '<td>'+traf+'</td><td>'+used+'</td><td>'+type+'</td>';
     tr.onclick = ()=>{ sel = x.mac; loadDevices(); loadHistory(); };
     tb.appendChild(tr);
@@ -627,10 +717,22 @@ def api_devices():
         out = [{"mac": d["mac"], "rssi": d["rssi"], "zone": d["zone"],
                 "type": "BLE" if d["src"] else "WiFi",
                 "rand": bool(d["flags"] & 0x01), "apple": bool(d["flags"] & 0x02),
-                "pkts": d["pkts"], "bytes": d["bytes"], "mark": d["mark"],
+                "pkts": d["pkts"], "bytes": d["bytes"], "mark": d["mark"], "ch": d["ch"],
                 "episode": d["episode"]} for d in view]
-        payload = {"mode": mode, "threshold": threshold, "devices": out, "rf": rf_view(now)}
+        hunt_expire(now)
+        hv = {"mac": hunt["mac"], "ch": hunt["ch"],
+              "left": round(HUNT_MAX_SECS - (now - hunt["since"])) if hunt["mac"] else 0}
+        payload = {"mode": mode, "threshold": threshold, "devices": out,
+                   "rf": rf_view(now), "hunt": hv}
     return json.dumps(payload), 200, {"Content-Type": "application/json"}
+
+
+def api_hunt():
+    from flask import request
+    mac = request.args.get("mac", "").strip().upper()
+    with lock:
+        out = set_hunt(mac or None)
+    return json.dumps(out), 200, {"Content-Type": "application/json"}
 
 
 def api_history():
@@ -690,6 +792,7 @@ def input_loop():
             elif c == "i": _set_mode("idle")
             elif c == "s": save_baseline()
             elif c == "c": baseline.clear(); rf_floor.clear(); print("baseline cleared.")
+            elif c == "h": set_hunt(None); print("hunt stopped.")
             elif c == "+": threshold += 5; print(f"threshold = {threshold}")
             elif c == "-": threshold -= 5; print(f"threshold = {threshold}")
             elif c == "q": running = False; break
@@ -732,6 +835,25 @@ BLE PRESENCE (watches / earbuds)
     Non-baseline BLE devices are flagged just by being present - a watch or
     earbud in the room is itself a violation. They show yellow and sort up.
 
+HUNT MODE (which desk? - needs HUNT_ENABLED on the board you carry)
+    The fixed boards tell you a phone is transmitting and roughly which half of
+    the room. To get to a desk you have to walk, because distance discrimination
+    depends on the RATIO of distances: at 3 m two neighbouring students differ by
+    0.2 dB, at 0.3 m they differ by 8-9 dB. Proximity resolves them, not antennas.
+
+    Press H on a device's row (or GET /api/hunt?mac=...). The carried board parks
+    on that MAC's channel - it stops sweeping the other 12, which is the point,
+    since hopping leaves it deaf to the target 92% of the time - and clicks its
+    buzzer faster the stronger the signal. Walk the room; when the clicking runs
+    together, tap the board's button to re-zero (a software attenuator step) and
+    keep closing in. Hold the button 1 s to go back to full scale. H again, or the
+    'h' key, stops the hunt; it also stops itself after {HUNT_MAX_SECS // 60} min.
+
+    Limits: only works while the target is actually TRANSMITTING, so hunt during
+    an episode, not after it. Only WiFi - a phone on cellular has no MAC to lock
+    onto, and a BLE-only device has no channel (those rows have no H button). A
+    hunting board is half-blind to the rest of the room while it hunts.
+
 USAGE
     python collector.py            start the collector
     python collector.py --help     show this help and exit
@@ -743,11 +865,13 @@ FIRST TIME (in Termux)
     (also install the Termux:API app from F-Droid for notifications)
 
 KEYS (type the letter, then Enter)
-    b baseline ({BASELINE_SECS // 60} min, EMPTY room) | l live | i idle | s save | c clear | +/- threshold | q quit
+    b baseline ({BASELINE_SECS // 60} min, EMPTY room) | l live | i idle | s save | c clear
+    h stop hunt | +/- threshold | q quit
 
 LIMITS
     Off / airplane-mode phones emit nothing and are invisible. Randomized MACs
-    inflate the count. Zoning is corner-level, not desk-level.
+    inflate the count. Zoning is corner-level, not desk-level - use hunt mode and
+    your feet to get closer than that.
 """
 
 
@@ -765,6 +889,7 @@ def main():
     app.add_url_rule("/api/devices", "api_devices", api_devices)
     app.add_url_rule("/api/history", "api_history", api_history)
     app.add_url_rule("/api/mark", "api_mark", api_mark)
+    app.add_url_rule("/api/hunt", "api_hunt", api_hunt)
 
     def run_server():
         global web_error
